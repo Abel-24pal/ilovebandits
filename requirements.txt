@@ -1,0 +1,4 @@
+# this is for sphinx to generate the docs
+numpy==1.26
+pandas==2.2.2
+scikit-learn==1.5.1

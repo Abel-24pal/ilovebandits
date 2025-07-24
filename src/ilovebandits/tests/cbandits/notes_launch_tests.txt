@@ -1,0 +1,12 @@
+pytest -v --tb=long #add -s argument to see the print of successful tests
+# See: https://docs.pytest.org/en/6.2.x/usage.html
+# see: https://www.youtube.com/watch?v=cHYq1MRoyI0
+
+###### launch with debugger:
+pytest -v -s --tb=long
+# import pdb
+# pdb.set_trace()
+
+# See the parameters employed to launch each test: pytest --collect-only
+
+#you can configure certain aspects of the tests with a conftest.py file

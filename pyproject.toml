@@ -1,0 +1,17 @@
+[project]
+name = "ilovebandits"
+version = "0.1.0"
+description = "Advanced features for bandits with or without context."
+readme = "README.md"
+authors = [
+    { name = "Abel Sancarlos Gonzalez", email = "abel.sancarlos@b2-impact.com" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.2, < 2.4",
+    "scikit-learn>=1.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
