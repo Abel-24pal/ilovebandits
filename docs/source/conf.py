@@ -6,9 +6,11 @@
 import os
 import sys
 
-# path for Autodoc configuration
-sys.path.insert(0, os.path.abspath('../../src/ilovebandits')) # It is important to note here that the absolute path must be specified in relation to where conf.py resides, i.e. our `Sphinx source root`
-
+#### path for Autodoc configuration
+## in azure devops I needed:
+# sys.path.insert(0, os.path.abspath('../../src/ilovebandits')) # It is important to note here that the absolute path must be specified in relation to where conf.py resides, i.e. our `Sphinx source root`
+## in wsl project I needed:
+sys.path.insert(0, os.path.abspath('../../src'))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
