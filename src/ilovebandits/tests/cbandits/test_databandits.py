@@ -5,8 +5,8 @@ import numpy.testing as npt
 import pandas as pd
 import pytest
 
-from aml.ml_logic.cbandits.data_bandits.base import DataBasedBanditFromPandas
-from aml.ml_logic.cbandits.data_bandits.utils import GenrlBanditDataLoader
+from src.ilovebandits.data_bandits.base import DataBasedBanditFromPandas
+from src.ilovebandits.data_bandits.utils import GenrlBanditDataLoader
 
 RANDOM_STATE = 42
 

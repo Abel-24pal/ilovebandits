@@ -6,7 +6,7 @@ import pytest
 from scipy.special import expit
 from sklearn.linear_model import LinearRegression, LogisticRegression
 
-from aml.ml_logic.cbandits.agents import EpsGreedyConAgent, MismatchedArmNumberError, NotEnoughRewardsPerArmError
+from src.ilovebandits.agents import EpsGreedyConAgent, MismatchedArmNumberError, NotEnoughRewardsPerArmError
 
 RANDOM_SEED = 42
 

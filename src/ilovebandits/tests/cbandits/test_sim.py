@@ -6,12 +6,12 @@ import pandas as pd
 import pytest
 from sklearn.ensemble import RandomForestClassifier
 
-from aml.ml_logic.cbandits.agents import EpsGreedyConAgent
-from aml.ml_logic.cbandits.data_bandits.base import DataBasedBanditFromPandas
-from aml.ml_logic.cbandits.data_bandits.utils import GenrlBanditDataLoader
-from aml.ml_logic.cbandits.sim import NoRewardsReceivedError, NotAbleToUpdateBanditError, SimContBandit#, SimMabBandit
-# from aml.ml_logic.mab.agents import GreedyAgent
-# from aml.ml_logic.mab.q_estimators import QEstMean
+from src.ilovebandits.agents import EpsGreedyConAgent
+from src.ilovebandits.data_bandits.base import DataBasedBanditFromPandas
+from src.ilovebandits.data_bandits.utils import GenrlBanditDataLoader
+from src.ilovebandits.sim import NoRewardsReceivedError, NotAbleToUpdateBanditError, SimContBandit, SimMabBandit
+from src.ilovebandits.mab.agents import GreedyAgent
+from src.ilovebandits.mab.q_estimators import QEstMean
 
 RANDOM_SEED = 42
 RANDOM_STATE = 42
@@ -41,37 +41,37 @@ def dataset_for_sims():
     return GenrlBanditDataLoader().get_statlog_shuttle_data()
 
 
-# @pytest.fixture(
-#     scope="function", params=[0, 10]
-# )  # The fixture is run once per test function because the default scope is 'function'.
-# def mab_delay_sim(request, pars_simmab, dataset_for_sims):
-#     """Do a simulation of a contextual bandit problem with different reward delays."""
-#     reward_delay = request.param
+@pytest.fixture(
+    scope="function", params=[0, 10]
+)  # The fixture is run once per test function because the default scope is 'function'.
+def mab_delay_sim(request, pars_simmab, dataset_for_sims):
+    """Do a simulation of a contextual bandit problem with different reward delays."""
+    reward_delay = request.param
 
-#     iterations = pars_simmab["iterations"]
+    iterations = pars_simmab["iterations"]
 
-#     model_env = DataBasedBanditFromPandas(
-#         df=dataset_for_sims,
-#         reward_delay=reward_delay,
-#         random_state=RANDOM_STATE,
-#     )
-#     narms = model_env.arms
-#     qvals_init = [0] * narms  # Initial Q-values for each arm
-#     qvals_init[0] = 1  # Set the first arm's initial Q-value to 1 for testing purposes
-#     agent = GreedyAgent(q_estimator=QEstMean(arms=narms, qvals_init=qvals_init))
+    model_env = DataBasedBanditFromPandas(
+        df=dataset_for_sims,
+        reward_delay=reward_delay,
+        random_state=RANDOM_STATE,
+    )
+    narms = model_env.arms
+    qvals_init = [0] * narms  # Initial Q-values for each arm
+    qvals_init[0] = 1  # Set the first arm's initial Q-value to 1 for testing purposes
+    agent = GreedyAgent(q_estimator=QEstMean(arms=narms, qvals_init=qvals_init))
 
-#     simulator = SimMabBandit(
-#         agent=agent,
-#         model_env=model_env,
-#     )
+    simulator = SimMabBandit(
+        agent=agent,
+        model_env=model_env,
+    )
 
-#     res = simulator.simulate(iterations=iterations)
-#     return {
-#         "simulator": simulator,
-#         "res": res,
-#         "iterations": iterations,
-#         "reward_delay": reward_delay,
-#     }
+    res = simulator.simulate(iterations=iterations)
+    return {
+        "simulator": simulator,
+        "res": res,
+        "iterations": iterations,
+        "reward_delay": reward_delay,
+    }
 
 
 @pytest.fixture(
@@ -289,56 +289,56 @@ def test_no_rewards_error(dataset_for_sims):
         simulator.simulate(iterations=iterations)
 
 
-# def test_reset_mab_simulator(mab_delay_sim):
-#     """Test the reset functionality of the simulator."""
-#     simulator = mab_delay_sim["simulator"]
+def test_reset_mab_simulator(mab_delay_sim):
+    """Test the reset functionality of the simulator."""
+    simulator = mab_delay_sim["simulator"]
 
-#     # Before resetting
-#     assert not np.all(np.isclose(simulator.agent.arm_count, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5))
-#     assert not np.all(
-#         np.isclose(simulator.agent.q_estimator.arm_count_updates, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5)
-#     )
-#     assert simulator.agent.last_action is not None
-#     assert simulator.model_env.idx != 0
+    # Before resetting
+    assert not np.all(np.isclose(simulator.agent.arm_count, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5))
+    assert not np.all(
+        np.isclose(simulator.agent.q_estimator.arm_count_updates, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5)
+    )
+    assert simulator.agent.last_action is not None
+    assert simulator.model_env.idx != 0
 
-#     #### RESETTING THE SIMULATOR ####
-#     simulator.reset_agent_and_env()
+    #### RESETTING THE SIMULATOR ####
+    simulator.reset_agent_and_env()
 
-#     # After resetting:
-#     assert np.all(np.isclose(simulator.agent.arm_count, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5))
-#     assert np.all(
-#         np.isclose(simulator.agent.q_estimator.arm_count_updates, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5)
-#     )
-#     assert simulator.agent.last_action is None
-#     assert simulator.model_env.idx == 0
+    # After resetting:
+    assert np.all(np.isclose(simulator.agent.arm_count, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5))
+    assert np.all(
+        np.isclose(simulator.agent.q_estimator.arm_count_updates, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5)
+    )
+    assert simulator.agent.last_action is None
+    assert simulator.model_env.idx == 0
 
 
-# def test_mab_sim(mab_delay_sim):
-#     """Test a mab simulation with 0 delays and with constant delays."""
-#     res = mab_delay_sim["res"]
-#     iterations = mab_delay_sim["iterations"]
-#     reward_delay = mab_delay_sim["reward_delay"]
+def test_mab_sim(mab_delay_sim):
+    """Test a mab simulation with 0 delays and with constant delays."""
+    res = mab_delay_sim["res"]
+    iterations = mab_delay_sim["iterations"]
+    reward_delay = mab_delay_sim["reward_delay"]
 
-#     ##### General length check #####
-#     assert len(res["actions"]) == iterations
-#     assert len(res["prob_actions"]) == iterations
-#     assert iterations == sum(res["agent"].arm_count)
-#     assert (iterations - reward_delay) == sum(res["agent"].q_estimator.arm_count_updates)
-#     assert len(res["reward_heap"]) == reward_delay  # No reward delay, so the heap should be empty
+    ##### General length check #####
+    assert len(res["actions"]) == iterations
+    assert len(res["prob_actions"]) == iterations
+    assert iterations == sum(res["agent"].arm_count)
+    assert (iterations - reward_delay) == sum(res["agent"].q_estimator.arm_count_updates)
+    assert len(res["reward_heap"]) == reward_delay  # No reward delay, so the heap should be empty
 
-#     actions_taken = pd.DataFrame(res["actions"], columns=["arm"])
-#     actions_taken["ite"] = actions_taken.index + 1  # Adjust index to start from 1. Iterations start at 1.
-#     rew_agent = pd.DataFrame(res["rew_agent"])
+    actions_taken = pd.DataFrame(res["actions"], columns=["arm"])
+    actions_taken["ite"] = actions_taken.index + 1  # Adjust index to start from 1. Iterations start at 1.
+    rew_agent = pd.DataFrame(res["rew_agent"])
 
-#     assert (
-#         len(rew_agent) == iterations - reward_delay
-#     )  # This shopuld be true if delays are 0. Rewards that agent sees is equal to number of iterations.
-#     # this arrays are equal when there are no reward delays
-#     np.array_equal(
-#         actions_taken[["ite", "arm"]].values,
-#         rew_agent[["ite", "arm"]].values,
-#     )
+    assert (
+        len(rew_agent) == iterations - reward_delay
+    )  # This shopuld be true if delays are 0. Rewards that agent sees is equal to number of iterations.
+    # this arrays are equal when there are no reward delays
+    np.array_equal(
+        actions_taken[["ite", "arm"]].values,
+        rew_agent[["ite", "arm"]].values,
+    )
 
-#     exp_qvals = [rew_agent.query("arm==@arm")["reward"].mean() for arm in range(res["agent"].arms)]
-#     exp_qvals = [0 if np.isnan(x) else x for x in exp_qvals]  # if action does not exist, it will be NaN
-#     npt.assert_allclose(actual=res["qvals"][-1], desired=exp_qvals, rtol=1e-7, atol=1e-8)
+    exp_qvals = [rew_agent.query("arm==@arm")["reward"].mean() for arm in range(res["agent"].arms)]
+    exp_qvals = [0 if np.isnan(x) else x for x in exp_qvals]  # if action does not exist, it will be NaN
+    npt.assert_allclose(actual=res["qvals"][-1], desired=exp_qvals, rtol=1e-7, atol=1e-8)

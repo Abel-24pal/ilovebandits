@@ -5,7 +5,7 @@ import math
 import numpy as np
 import pytest
 
-from aml.ml_logic.cbandits.utils import argmax, find_max_indices, find_max_numbers
+from src.ilovebandits.utils import argmax, find_max_indices, find_max_numbers
 
 
 # to debug to see if a function returns the expected error:
