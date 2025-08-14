@@ -1,0 +1,49 @@
+## ADF
+pytest-adf==0.1.5
+pytest-azurepipelines==1.0.5
+azure-mgmt-datafactory==9.2.0
+
+## pytest
+pytest-xdist==3.6.1
+pytest-order==1.3.0
+
+## Bandits package python=3.10.16
+marshmallow==3.23.2
+matplotlib==3.9.2
+matplotlib-inline== 0.1.7
+numexpr==2.10.1
+numpy==1.26
+pandas==2.2.2
+scikit-learn==1.5.1
+scipy== 1.14.0
+seaborn==0.13.2
+statsmodels==0.14.2
+xgboost==3.0.2
+lightgbm==4.6.0
+ipdb==8.37.0
+
+## AML
+azure-containerregistry
+azure-ai-ml==1.27.1
+azure-cli==2.73.0
+mltable==1.6.1
+azure-keyvault==4.2.0
+
+## Linting and Typing
+ruff==0.5.0
+
+## CI
+python-dotenv==1.0.1
+pytest==7.0.1
+pyodbc==5.2.0
+
+# Added for fake data test
+pandera==0.20.4
+polars==1.10.0
+polars-hash==0.5.3
+deltalake==1.0.2
+connectorx==0.4.0
+greenlet==3.2.1 # to write in db
+sqlalchemy==2.0.40 # to write in db
+sqlglot==26.3.9
+pydantic==2.10.5
