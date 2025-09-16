@@ -33,4 +33,4 @@ jobs:
       run: uv tool install tox --with tox-uv
 
     - name: Run Pytests via Tox
-      run: uv run tox -e py${{ matrix.python-version }}
+      run: uv run tox -e py${{ matrix.python-version//. }}
