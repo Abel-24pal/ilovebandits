@@ -2,15 +2,36 @@
 name = "ilovebandits"
 version = "0.1.0"
 description = "Advanced features for bandits with or without context."
-readme = "README.md"
 authors = [
     { name = "Abel Sancarlos Gonzalez", email = "abel.ingelectrico@gmail.com" }
+]
+readme = "README.md"
+license = { text = "Apache-2.0" }
+keywords = ["mab", "contextual bandits", "python", "machine learning", "data-driven decision engines"]
+classifiers = [
+    "Programming Language :: Python",
+    "License :: OSI Approved :: Apache Software License",
+    "Development Status :: 2 - Pre-Alpha",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: Unix",
+    "Topic :: Scientific/Engineering",
 ]
 requires-python = ">=3.10"
 dependencies = [
     "pandas>=2.2, < 2.4",
     "scikit-learn>=1.5",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.2",
+    "ruff>=0.5.7",
+    "pytest-cov>=5.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Abel-24pal/ilovebandits" 
+Repository = "https://github.com/Abel-24pal/ilovebandits"
 
 [build-system]
 requires = ["hatchling"]
