@@ -9,6 +9,32 @@ on:
     - README.md
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+
+    - name: Install required-version defined in pyproject.toml
+      uses: astral-sh/setup-uv@v5
+      with:
+        pyproject-file: "pyproject.toml"
+        version: "0.6.12"
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+
+    - name: "Set up Python"
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: "pyproject.toml"
+
+    - name: Install the project
+      run: uv sync --all-extras --dev
+
+    - name: Run linting
+      run: |
+        uv run ruff check .
+
   tests:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -29,7 +55,7 @@ jobs:
     steps:
     - name: Checkout Repo
       uses: actions/checkout@v4
-    
+
     - name: Set up uv
       uses: astral-sh/setup-uv@v5
       with:
