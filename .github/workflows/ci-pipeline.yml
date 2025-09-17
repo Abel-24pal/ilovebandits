@@ -36,6 +36,7 @@ jobs:
         uv run ruff check .
 
   tests:
+    needs: lint
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -71,3 +72,32 @@ jobs:
 
     - name: Run Pytests via Tox
       run: uv run tox -e ${{ matrix.tox-env }}
+
+  coverage:
+    needs: ['lint', 'tests']
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        pyproject-file: "pyproject.toml"
+        version: "0.6.12"
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+
+    - name: Install the project
+      run: uv sync --all-extras --dev
+
+    - name: Install Tox and Tox-uv
+      run: uv tool install tox --with tox-uv
+
+    - name: Run coverage
+      run: uv run tox -e coverage
+
+    - name: Upload Coverage Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage.xml
