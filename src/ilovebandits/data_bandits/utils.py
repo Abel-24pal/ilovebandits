@@ -1,6 +1,6 @@
 """Utils for downloading and processing data for bandit simulations. Based on genrl library's data_bandits."""
 
-import subprocess
+import unlzw3
 import urllib.request
 from pathlib import Path
 from typing import Union
@@ -8,7 +8,9 @@ from typing import Union
 import pandas as pd
 
 
-def download_data(path: str, url: str, force: bool = False, filename: Union[str, None] = None) -> str:
+def download_data(
+    path: str, url: str, force: bool = False, filename: Union[str, None] = None
+) -> str:
     """Download data to given location from given URL. TAken from: https://github.com/SforAiDl/genrl/blob/ce767e43859a65e67d3ec1f7ca59b751b114615f/genrl/utils/data_bandits/utils.py .
 
     Args:
@@ -49,12 +51,16 @@ def try_data_download(fpath: Path, path: Path, url: str):
             raise e
 
 
-def fetch_data_without_header(path: Union[str, Path], fname: str, delimiter: str = ",", na_values: list = []):  # noqa: B006
+def fetch_data_without_header(
+    path: Union[str, Path], fname: str, delimiter: str = ",", na_values: list = []
+):  # noqa: B006
     """Auxiliary function taken from https://github.com/SforAiDl/genrl/blob/ce767e43859a65e67d3ec1f7ca59b751b114615f/genrl/utils/data_bandits/utils.py ."""
     if Path(path).is_dir():
         path = Path(path).joinpath(fname)
     if Path(path).is_file():
-        df = pd.read_csv(path, header=None, delimiter=delimiter, na_values=na_values).dropna()
+        df = pd.read_csv(
+            path, header=None, delimiter=delimiter, na_values=na_values
+        ).dropna()
     else:
         raise FileNotFoundError(f"File not found at location {path}, use download flag")
     return df
@@ -67,11 +73,17 @@ class GenrlBanditDataLoader:
         self.force_download = force_download
 
     def get_data(self, path: str, url: str) -> pd.DataFrame:
-        """Get the shuttle data as a pandas DataFrame."""
+        """Download and decompress the shuttle data as a pandas DataFrame."""
         z_fpath = download_data(path, url, self.force_download)
-        subprocess.run(["uncompress", "-f", z_fpath])  # noqa: S607, S603, PLW1510
-        fpath = Path(z_fpath).parent.joinpath("shuttle.trn")
 
+        # Remove `.Z` extension -> "shuttle.trn"
+        fpath = Path(z_fpath).with_suffix("")
+
+        # Decompress using unlzw3 (cross-platform)
+        with open(z_fpath, "rb") as compressed, open(fpath, "wb") as decompressed:
+            decompressed.write(unlzw3.unlzw(compressed.read()))
+
+        # Load into pandas
         return pd.read_csv(fpath, header=None, delimiter=" ")
 
     def get_statlog_shuttle_data(self) -> pd.DataFrame:
