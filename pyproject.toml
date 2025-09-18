@@ -20,6 +20,7 @@ requires-python = ">=3.10"
 dependencies = [
     "pandas>=2.2, < 2.4",
     "scikit-learn>=1.5",
+    "unlzw3 < 1.0",
 ]
 
 [project.optional-dependencies]
@@ -30,7 +31,7 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Abel-24pal/ilovebandits" 
+Homepage = "https://github.com/Abel-24pal/ilovebandits"
 Repository = "https://github.com/Abel-24pal/ilovebandits"
 
 [build-system]
