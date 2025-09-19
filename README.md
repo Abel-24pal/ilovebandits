@@ -1,3 +1,3 @@
 # ilovebandits
 Advanced tools for multi-armed and contextual bandits
-WIP
+WIP (WORK IN PROGESS) PRE ALPHA VERSION
