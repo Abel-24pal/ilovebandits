@@ -8,6 +8,7 @@ Subpackages
    :maxdepth: 4
 
    ilovebandits.data_bandits
+   ilovebandits.mab
 
 Submodules
 ----------
