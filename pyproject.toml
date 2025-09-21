@@ -1,6 +1,6 @@
 [project]
 name = "ilovebandits"
-version = "0.1.0a1"
+version = "0.1.0a2"
 description = "Advanced features for bandits with or without context."
 authors = [
     { name = "Abel Sancarlos Gonzalez", email = "abel.ingelectrico@gmail.com" }
