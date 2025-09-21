@@ -29,7 +29,7 @@ This package is intended to provide a quick, as well as (hopefully) easy to unde
 Current version
 ***************
 
-In latest version 0.1.0a1, we have:
+In latest version 0.1.0a2, we have:
 
 - Multi-armed bandits (MAB):
 
