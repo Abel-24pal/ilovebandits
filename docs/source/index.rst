@@ -10,10 +10,13 @@ ilovebandits documentation
    :maxdepth: 2
    :caption: Contents:
 
+   installation
    intro
    ilovebandits
    modules
-   examples
+   examples_mab
+   examples_cban
+
 
 
 Indices and tables
