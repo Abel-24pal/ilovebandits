@@ -714,8 +714,12 @@ class BaseTreeEnsembleContextualAgent(GreedyConAgent):
                 x_train = c_train[a_train == arm]
                 y_train = r_train[a_train == arm]
 
-                x_pertree = [x_train for _ in range(len(self.models[arm].estimators_))]
-                y_pertree = [y_train for _ in range(len(self.models[arm].estimators_))]
+                x_pertree = [
+                    x_train for _ in range(len(self.models[arm].model_.estimators_))
+                ]
+                y_pertree = [
+                    y_train for _ in range(len(self.models[arm].model_.estimators_))
+                ]
 
                 self.models[arm].set_data_per_tree(x_pertree, y_pertree)
 
@@ -724,8 +728,8 @@ class BaseTreeEnsembleContextualAgent(GreedyConAgent):
             x_train = np.column_stack((c_train, a_train))
             y_train = r_train
             self.model.set_data_per_tree(
-                [x_train for _ in range(len(self.model.estimators_))],
-                [y_train for _ in range(len(self.model.estimators_))],
+                [x_train for _ in range(len(self.model.model_.estimators_))],
+                [y_train for _ in range(len(self.model.model_.estimators_))],
             )
 
         self.fast_updates_count += 1

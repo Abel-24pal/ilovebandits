@@ -1,6 +1,29 @@
 # ilovebandits
 
-The implementation has been developed in Python 3. We are currently in a pre-alpha version focusing on adding core features and stabilizing architecture.
+ilovebandits is a high-level Python package to work with contextual and multiarmed bandits with
+new released algorithms. In essence, this package adds novel ensemble of trees techniques
+for contextual bandits that the industry demands and that are not currently available in other places.
+
+This package was born due to the need of having more advanced bandit algorithms and features for the finance industry.
+
+Next version will also add the concept of composed rewards where you can feed the bandit with different type rewards in time as this was a requirement that a lot of problems face.
+
+The implementation has been developed in Python 3.
+We are currently in the first version focusing on adding more core features and collecting feedback from the community.
+
+# Installation
+
+**Installation/Usage**: [Installation/Usage details in official docs](https://ilovebandits.readthedocs.io/en/latest/examples.html)
+
+# Documentation
+
+**Documentation**: [Official documentation of the project in readthedocs](https://ilovebandits.readthedocs.io)
+
+# Tutorial
+
+**Tutorial contextual bandits**: [Tutorial and examples contextual bandits](https://ilovebandits.readthedocs.io/en/latest/examples_cban.html)
+
+**Tutorial multi-armed bandits**: [Tutorial and exmaples multi-armed bandits](https://ilovebandits.readthedocs.io/en/latest/examples_mab.html)
 
 ## Motivation
 
@@ -28,15 +51,3 @@ These small updates also change the global reward estimate employed by the bandi
 ---
 
 This package is intended to provide a quick, as well as (hopefully) easy-to-understand, way of running bandit simulations and core functions to create ready-to-use solutions for the industry.
-
-# Installation
-
-**Installation/Usage**: [Installation/Usage details in official docs](https://ilovebandits.readthedocs.io/en/latest/examples.html)
-
-# Documentation
-
-**Documentation**: [Official documentation of the project in readthedocs](https://ilovebandits.readthedocs.io)
-
-# Current version content and limitations
-
-[Current version content and limitations](https://ilovebandits.readthedocs.io/en/latest/intro.html)

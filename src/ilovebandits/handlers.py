@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
-from typing import Tuple, List, Union
+from typing import Tuple, Union
 from sklearn.ensemble._forest import _generate_sample_indices
 from sklearn.base import clone
 from sklearn.base import BaseEstimator
@@ -89,8 +89,88 @@ class RandForestHandler(BaseEstimator):
 
         return self
 
-    def set_data_per_tree(self, x_pertree: List[np.array], y_pertree: List[np.array]):
+    # ######### TEST NOT OPTIMIZED: #############
+    # def set_data_per_tree(self, x_pertree: List[np.array], y_pertree: List[np.array]):
+    #     """Compute necessary self.uc_data object to do the uncetainty estimation. In this case, we use the provided x_val, y_val. we do not use the bootstrap samples.
+
+    #     Parameters
+    #     ----------
+    #     x_pertree : List of np.arrays of shape (n_samples, n_features)
+    #         Feature data points for each tree in the forest. The position in the list corresponds to the tree index whose points belong to.
+    #         Different data points can be used for each tree or the same data points can be used for all trees.
+    #     y_pertree : List of np.arrays of shape (n_samples, )
+    #         Target/reward data points for each tree in the forest. The position in the list corresponds to the tree index whose points belong to.
+    #         Different data points can be used for each tree or the same data points can be used for all trees.
+
+    #     Notes
+    #     ----------
+    #     self.uc_data : dict
+    #         Dictionary where each key is a tree index and the value is another dictionary containing:
+    #         - 'leaf_counts': dict mapping leaf index to the number of samples in that leaf.
+    #         - 'leaf_avg_vals': dict mapping leaf index to the average value of the samples in that leaf.
+    #         - 'leaf_var_vals': dict mapping leaf index to the variance of the values of the samples in that leaf.
+    #         - 'x_samples': np.array of shape (n_samples, n_features)
+    #             Features for the training samples of the tree.
+    #         - 'y_samples': np.array of shape (n_samples, )
+    #             Rewards for the training samples of the tree.
+    #         - 'leaf_ids_train': np.array of shape (n_samples, )
+    #             Leaf index for each sample in the training set (x_samples) of the tree.
+    #     """
+    #     #####OPTION what it seems researchers do:
+    #     y_pertree = [ytree * self.rf_avg_ for ytree in y_pertree]
+
+    #     for sel_tree in range(len(self.model_.estimators_)):
+    #         self.uc_data_[sel_tree] = {}
+
+    #         leaf_ids = self.model_.estimators_[
+    #             sel_tree
+    #         ].apply(
+    #             x_pertree[sel_tree]
+    #         )  # This is the leaf index for each sample in the training set of the tree sel_tree
+
+    #         leaf_tree_idxs, leaf_tree_count = np.unique(leaf_ids, return_counts=True)
+
+    #         self.uc_data_[sel_tree]["leaf_counts"] = dict(
+    #             zip(leaf_tree_idxs, leaf_tree_count)
+    #         )
+
+    #         self.uc_data_[sel_tree]["leaf_avg_vals"] = dict(
+    #             zip(
+    #                 leaf_tree_idxs,
+    #                 [
+    #                     y_pertree[sel_tree][leaf_ids == leaf_idx].mean()
+    #                     for leaf_idx in leaf_tree_idxs
+    #                 ],
+    #             )
+    #         )
+
+    #         ####OPTION what it seems researchers do:
+    #         dic_leaf_tree_count = self.uc_data_[sel_tree]["leaf_counts"]
+    #         self.uc_data_[sel_tree]["leaf_var_vals"] = dict(
+    #             zip(
+    #                 leaf_tree_idxs,
+    #                 [
+    #                     y_pertree[sel_tree][leaf_ids == leaf_idx].var()
+    #                     / dic_leaf_tree_count[leaf_idx]
+    #                     for leaf_idx in leaf_tree_idxs
+    #                 ],
+    #             )
+    #         )
+
+    #         self.uc_data_[sel_tree]["x_samples"] = x_pertree[sel_tree]
+    #         self.uc_data_[sel_tree]["y_samples"] = y_pertree[sel_tree]
+    #         self.uc_data_[sel_tree]["leaf_ids_train"] = (
+    #             leaf_ids  # This is the leaf index for each sample in the training set of the tree sel_tree
+    #         )
+
+    ######### TEST OPTIMIZATION: #############
+    def set_data_per_tree(
+        self, x_pertree: list[np.ndarray], y_pertree: list[np.ndarray]
+    ):
         """Compute necessary self.uc_data object to do the uncetainty estimation. In this case, we use the provided x_val, y_val. we do not use the bootstrap samples.
+
+        Optimized version: computes per-leaf statistics (counts, means, variances)
+        efficiently using vectorized numpy operations.
 
         Parameters
         ----------
@@ -115,52 +195,33 @@ class RandForestHandler(BaseEstimator):
             - 'leaf_ids_train': np.array of shape (n_samples, )
                 Leaf index for each sample in the training set (x_samples) of the tree.
         """
-        #####OPTION what it seems researchers do:
         y_pertree = [ytree * self.rf_avg_ for ytree in y_pertree]
 
-        for sel_tree in range(len(self.model_.estimators_)):
-            self.uc_data_[sel_tree] = {}
+        for sel_tree, (x_tree, y_tree) in enumerate(zip(x_pertree, y_pertree)):
+            estimator = self.model_.estimators_[sel_tree]
+            leaf_ids = estimator.apply(x_tree)  # shape (n_samples,)
 
-            leaf_ids = self.model_.estimators_[
-                sel_tree
-            ].apply(
-                x_pertree[sel_tree]
-            )  # This is the leaf index for each sample in the training set of the tree sel_tree
+            # Map leaf_ids to consecutive integers for bincount
+            unique_leaves, inv = np.unique(leaf_ids, return_inverse=True)
 
-            leaf_tree_idxs, leaf_tree_count = np.unique(leaf_ids, return_counts=True)
+            counts = np.bincount(inv)
+            sums = np.bincount(inv, weights=y_tree)
+            means = sums / counts
 
-            self.uc_data_[sel_tree]["leaf_counts"] = dict(
-                zip(leaf_tree_idxs, leaf_tree_count)
-            )
+            # Variance calculation: var = E[y^2] - (E[y])^2
+            sums_sq = np.bincount(inv, weights=y_tree**2)
+            vars_ = (sums_sq / counts) - (means**2)
+            vars_ /= counts  # match your normalization convention
 
-            self.uc_data_[sel_tree]["leaf_avg_vals"] = dict(
-                zip(
-                    leaf_tree_idxs,
-                    [
-                        y_pertree[sel_tree][leaf_ids == leaf_idx].mean()
-                        for leaf_idx in leaf_tree_idxs
-                    ],
-                )
-            )
-
-            ####OPTION what it seems researchers do:
-            dic_leaf_tree_count = self.uc_data_[sel_tree]["leaf_counts"]
-            self.uc_data_[sel_tree]["leaf_var_vals"] = dict(
-                zip(
-                    leaf_tree_idxs,
-                    [
-                        y_pertree[sel_tree][leaf_ids == leaf_idx].var()
-                        / dic_leaf_tree_count[leaf_idx]
-                        for leaf_idx in leaf_tree_idxs
-                    ],
-                )
-            )
-
-            self.uc_data_[sel_tree]["x_samples"] = x_pertree[sel_tree]
-            self.uc_data_[sel_tree]["y_samples"] = y_pertree[sel_tree]
-            self.uc_data_[sel_tree]["leaf_ids_train"] = (
-                leaf_ids  # This is the leaf index for each sample in the training set of the tree sel_tree
-            )
+            # Store results
+            self.uc_data_[sel_tree] = {
+                "leaf_counts": dict(zip(unique_leaves, counts)),
+                "leaf_avg_vals": dict(zip(unique_leaves, means)),
+                "leaf_var_vals": dict(zip(unique_leaves, vars_)),
+                "x_samples": x_tree,
+                "y_samples": y_tree,
+                "leaf_ids_train": leaf_ids,
+            }
 
     def set_whole_train_data_per_tree(self):
         """Compute necessary self.uc_data object to do the uncetainty estimation. In this case, we use the whole training data, not just the bootstrap samples.
