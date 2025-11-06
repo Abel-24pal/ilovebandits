@@ -120,7 +120,7 @@ wheels = [
 
 [[package]]
 name = "ilovebandits"
-version = "0.1.0a2"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "pandas" },
