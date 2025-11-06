@@ -22,15 +22,15 @@ In the example below, you can see an example of how to initialize and use an age
         rng_seed=RANDOM_SEED,
     )
 
-For the base_estimator, you can use any regressor or classifier from scikit-learn or any other library that follows the scikit-learn interface.
+For the ``base_estimator``, you can use any regressor or classifier from scikit-learn or any other library that follows the scikit-learn interface.
 In the example below, we use a `RandomForestRegressor`_ from scikit-learn.
 However, you can use any other state-of-the-art ML models such as `XGBoost`_ or `LightGBM`_ with the corresponding scikit-learn wrapper.
 
 .. _XGBoost: https://xgboost.readthedocs.io/en/latest/
 .. _LightGBM: https://lightgbm.readthedocs.io/en/latest/
 
-The epsilon parameter controls the exploration-exploitation trade-off for the :class:`ilovebandits.mab.agents.EpsGreedyConAgent`. A value of 0.1 means that the agent will explore 10% of the time and exploit 90% of the time.
-The one_model_per_arm parameter indicates whether to use a disjoint model for each arm or a hybrid model for all arms.
+The ``epsilon`` parameter controls the exploration-exploitation trade-off for the :class:`ilovebandits.mab.agents.EpsGreedyConAgent`. A value of 0.1 means that the agent will explore 10% of the time and exploit 90% of the time.
+The ``one_model_per_arm`` parameter indicates whether to use a disjoint model for each arm or a hybrid model for all arms.
 Usually, disjoint models should be used, but as stated in research references such as `Tree Ensembles for Contextual Bandits`_, hybrid models make sense and can be useful when the base model is based on decision trees.
 For instance, `RandomForestRegressor`_.
 
@@ -70,19 +70,23 @@ In the example below, you can see how to initialize a :class:`ilovebandits.agent
         min_rewards_per_arm=2,
     )
 
-For the base_model, you should use a `RandomForestRegressor`_ or `RandomForestClassifier`_ from scikit-learn.
-Use only `RandomForestClassifier`_ if the expected rewards will be in the range {0,1}. Otherwise use `RandomForestRegressor`_
-The vpar parameter controls Thompson Sampling exploration. Higher values lead to more exploration as the posterior distributions will have higher variances.
-The samples_for_freq_est parameter controls the number of samples used for probability estimation in the action chosen for the agent.
-Use samples_for_freq_est=1 if you are not interested in estimating the probability of the chosen action.
+For the ``base_model``, you should use a `RandomForestRegressor`_ or `RandomForestClassifier`_ from scikit-learn.
+Use only `RandomForestClassifier`_ if the expected rewards will be in :math:`\{0, 1\}`. Otherwise use `RandomForestRegressor`_.
+
+The ``vpar`` parameter controls Thompson Sampling exploration. Higher values lead to more exploration as the posterior distributions will have higher variances.
+
+The ``samples_for_freq_est`` parameter controls the number of samples used for probability estimation in the action chosen for the agent.
+Use ``samples_for_freq_est=1`` if you are not interested in estimating the probability of the chosen action.
+
 The min_rewards_per_arm parameter controls the minimum number of unique rewards per arm you should have in order to do the first update of the agent.
 If the condition is not satisfied, the :class:`ilovebandits.exceptions.NotEnoughRewardsPerArmError` will be raised.
 This is a guardrail to avoid updating the agent with no rewards for some arms in the first iteration which could lead to problematic behaviors for future selection of those arms.
 Following the same philosofy, we have the min_samples_to_ignore_arm parameter which fixs a minimum number of samples per arm to allow the first update of the agent. If not,
 :class:`ilovebandits.exceptions.NotEnoughRewardsPerArmError` will be raised.
-The parameters min_rewards_per_arm and min_samples_to_ignore_arm are available for all contextual agents such as :class:`ilovebandits.mab.agents.EpsGreedyConAgent`
+The parameters ``min_rewards_per_arm`` and ``min_samples_to_ignore_arm`` are available for all contextual agents such as :class:`ilovebandits.mab.agents.EpsGreedyConAgent`
 as they are useful to avoid problems when the initial data used to update the agent is very small.
-Other parameters like one_model_per_arm and n_rounds_random have the same meaning as in the previous example.
+
+Other parameters like ``one_model_per_arm`` and ``n_rounds_random`` have the same meaning as in the previous example.
 
 In the example below, you can see how to initialize a :class:`ilovebandits.agents.RandomForestUcbAgent` (class that implements UCB combined with Random Forest):
 
@@ -111,7 +115,7 @@ In the example below, you can see how to initialize a :class:`ilovebandits.agent
         n_rounds_random=10,
     )
 
-The vpar controls UCB exploration increasing uncertainty estimation. Higher values lead to more exploration.
+The ``vpar`` controls UCB exploration increasing uncertainty estimation. Higher values lead to more exploration.
 Other parameters have the same meaning as previously discussed.
 
 .. _RandomForestClassifier: https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html
@@ -311,8 +315,8 @@ Here an example of how to use this fast update feature and the time savings it p
         r_train=np.concatenate([y_train2, y_train], axis=0)
     )
 
-If you compare the time taken by both methods, you will see that the partial_fast_update method is significantly faster than the update_agent method.
-For this toy example, in the machine used for testing, the partial_fast_update method took around 2 seconds, while the update_agent method took around 3 minutes.
+If you compare the time taken by both methods, you will see that the ``partial_fast_update`` method is significantly faster than the ``update_agent`` method.
+For this toy example, in the machine used for testing, the ``partial_fast_update`` method took around 2 seconds, while the ``update_agent`` method took around 3 minutes.
 (We used a standard PC for personal usage)
 
 
@@ -322,12 +326,12 @@ It is important to test the performance of the agent in a given environment. For
 the :class:`ilovebandits.sim.SimContBandit` is created.
 It accepts 4 parameters:
 
-- agent: an instance of a contextual agent from ilovebandits.agents
-- model_env: an instance of a contextual bandit environment from ilovebandits.data_bandits
-- min_ites_to_train: minimum number of iterations to start training the agent
-- update_factor: if 1, it updates the model every iteration, if 2, it updates every two iterations, etc.
+- ``agent``: an instance of a contextual agent from ilovebandits.agents
+- ``model_env``: an instance of a contextual bandit environment from ilovebandits.data_bandits
+- ``min_ites_to_train``: minimum number of iterations to start training the agent
+- ``update_factor``: if 1, it updates the model every iteration, if 2, it updates every two iterations, etc.
 
-For the model_env, we can use the :class:`ilovebandits.data_bandits.base.DataBasedBanditFromPandas` class,
+For the ``model_env``, we can use the :class:`ilovebandits.data_bandits.base.DataBasedBanditFromPandas` class,
 which allows us to create a contextual bandit environment from a pandas DataFrame.
 This class transforms a classification dataset into a contextual bandit environment.
 This is the same technique employed in research papers such as `Neural Thompson Sampling`_.
