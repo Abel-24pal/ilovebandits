@@ -1,37 +1,28 @@
 """Core and main classes for the MAB problem."""
 
 import warnings
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Dict
 
 import numpy as np
 from sklearn.base import clone, is_classifier
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
+from .exceptions import (
+    MismatchedArmNumberError,
+    NotEnoughRewardsPerArmError,
+    AgentNotFullyUpdatedError,
+)
+from .handlers import RandForestHandler
 from .utils import argmax
 
 ####### COSNTANTS FOR ERROR NotEnoughRewardsPerArmError ########
 # I force all arms to have at least "MIN_REWARDS_PER_ARM" unique rewards until all arms have "MIN_SAMPLES_TO_IGNORE_ARM" samples. Once we have "MIN_SAMPLES_TO_IGNORE_ARM" samples per arm, the error NotEnoughRewardsPerArmError will not be raised anymore.
-MIN_REWARDS_PER_ARM = 2  # Minimum number of unique rewards per arm to avoid NotEnoughRewardsPerArmError
-MIN_SAMPLES_TO_IGNORE_ARM = 100  # Minimum number of samples per arm to avoid NotEnoughRewardsPerArmError
-
-
-class MismatchedArmNumberError(Exception):
-    """Exception raised when the number of arms in the agent does not match the number of arms in the training data."""
-
-    def __init__(self, expected_arms: int, actual_arms: int):
-        super().__init__(f"Expected {expected_arms} arms, but found {actual_arms} unique arms in a_train.")
-        self.expected = expected_arms
-        self.actual = actual_arms
-
-
-class NotEnoughRewardsPerArmError(Exception):
-    """Exception raised when there are not enough unique rewards per arm in the training data. We want at least 2 different rewards per arm."""
-
-    def __init__(self, unique_rewards_per_arm: List[int]):
-        super().__init__(
-            f"There are arms that have less than two unique reards in the training data provided. Here, the unique rewards per arm for each arm:  {unique_rewards_per_arm}."
-        )
-        self.unique_rewards_per_arm = unique_rewards_per_arm
+MIN_REWARDS_PER_ARM = (
+    2  # Minimum number of unique rewards per arm to avoid NotEnoughRewardsPerArmError
+)
+MIN_SAMPLES_TO_IGNORE_ARM = (
+    100  # Minimum number of samples per arm to avoid NotEnoughRewardsPerArmError
+)
 
 
 class BaseContextualAgent:
@@ -55,7 +46,9 @@ class BaseContextualAgent:
         rng_seed=None,
     ):
         self.arms = arms
-        self.idx_arms = list(range(self.arms))  # arms are encoded in the range [0, arms-1]
+        self.idx_arms = list(
+            range(self.arms)
+        )  # arms are encoded in the range [0, arms-1]
         self.n_rounds_random = n_rounds_random
         self.update_agent_counts = 0
         if rng_seed is None:
@@ -84,7 +77,10 @@ class BaseContextualAgent:
         """
         if sum(self.arm_count) < self.n_rounds_random:
             current_action, prob_action = self.take_random_action()
-        elif sum(self.arm_count) >= self.n_rounds_random and self.update_agent_counts == 0:
+        elif (
+            sum(self.arm_count) >= self.n_rounds_random
+            and self.update_agent_counts == 0
+        ):
             warnings.warn(
                 f"RANDOM ACTION: Agent {self.__class__.__name__} is taking a random action because it has not been updated yet. Please call update_agent() with training data before taking actions.",
                 stacklevel=2,
@@ -129,7 +125,9 @@ class BaseContextualAgent:
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
-    def update_agent(self, contexts: np.ndarray, actions: np.ndarray, rewards: np.ndarray) -> None:
+    def update_agent(
+        self, contexts: np.ndarray, actions: np.ndarray, rewards: np.ndarray
+    ) -> None:
         """
         Update the agent's parameters based on the historical data. This method should be implemented by subclasses.
 
@@ -146,12 +144,14 @@ class BaseContextualAgent:
 
     def reset_agent(self):
         """Reset agent parameters such as arm counters."""
-        self.arm_count = [0.0 for _ in range(self.arms)]  # number of times an arm is taken
+        self.arm_count = [
+            0.0 for _ in range(self.arms)
+        ]  # number of times an arm is taken
         self.last_action = None
         self.update_agent_counts = 0
 
 
-class EpsGreedyConAgent(BaseContextualAgent):
+class GreedyConAgent(BaseContextualAgent):
     """Epsilon Greedy Agent. Take Greedy action 1-epsilon% of times. Take random action epsilon% of times.
 
     Parameters
@@ -172,10 +172,11 @@ class EpsGreedyConAgent(BaseContextualAgent):
 
     def __init__(  # noqa: PLR0913
         self,
-        base_estimator: Union[RandomForestRegressor, RandomForestClassifier],  # NOT PREPARED FOR CLASSIFICATION YET!
+        base_estimator: Union[
+            RandomForestRegressor, RandomForestClassifier
+        ],  # NOT PREPARED FOR CLASSIFICATION YET!
         arms: int,
         n_rounds_random: int = 200,
-        epsilon: float = 0.1,
         one_model_per_arm: bool = True,
         rng_seed=None,
         min_rewards_per_arm: int = MIN_REWARDS_PER_ARM,
@@ -184,13 +185,14 @@ class EpsGreedyConAgent(BaseContextualAgent):
         super().__init__(
             arms=arms, n_rounds_random=n_rounds_random, rng_seed=rng_seed
         )  # it executes the __init__ function of the base class
-        self.epsilon = epsilon
         self.base_estimator = base_estimator
         self.one_model_per_arm = one_model_per_arm
 
         # Choose the prediction function dynamically (.predict or .predict_proba)
         self.predfun = (
-            (lambda m, x: m.predict_proba(x)[:, 1])  # or another slice depending on needs
+            (
+                lambda m, x: m.predict_proba(x)[:, 1]
+            )  # or another slice depending on needs
             if is_classifier(self.base_estimator)
             else (lambda m, x: m.predict(x))
         )
@@ -200,7 +202,9 @@ class EpsGreedyConAgent(BaseContextualAgent):
 
         self.reset_agent()
 
-    def update_agent(self, c_train: np.ndarray, a_train: np.ndarray, r_train: np.ndarray) -> None:
+    def update_agent(
+        self, c_train: np.ndarray, a_train: np.ndarray, r_train: np.ndarray
+    ) -> None:
         """
         Update the agent's parameters based on the historical data.This method should be implemented by subclasses.
 
@@ -220,17 +224,28 @@ class EpsGreedyConAgent(BaseContextualAgent):
         narms_in_train = len(idx_arms)
 
         if narms_in_train != self.arms:
-            raise MismatchedArmNumberError(expected_arms=self.arms, actual_arms=narms_in_train)
+            raise MismatchedArmNumberError(
+                expected_arms=self.arms, actual_arms=narms_in_train
+            )
         if not np.issubdtype(a_train.dtype, np.integer):
-            raise ValueError(f"Expected a_train to be of integer type, but found {a_train.dtype}.")
+            raise ValueError(
+                f"Expected a_train to be of integer type, but found {a_train.dtype}."
+            )
         if idx_arms != list(range(self.arms)):
             raise ValueError(
                 f"Expected arms to be encoded in the range [0, {self.arms - 1}], but found arms: {self.idx_arms}."
             )
 
-        unique_rewards_per_arm = [len(np.unique(r_train[a_train == arm])) for arm in range(self.arms)]
-        if min(unique_rewards_per_arm) < self.MIN_REWARDS_PER_ARM and np.min(a_counts) < self.MIN_SAMPLES_TO_IGNORE_ARM:
-            raise NotEnoughRewardsPerArmError(unique_rewards_per_arm=unique_rewards_per_arm)
+        unique_rewards_per_arm = [
+            len(np.unique(r_train[a_train == arm])) for arm in range(self.arms)
+        ]
+        if (
+            min(unique_rewards_per_arm) < self.MIN_REWARDS_PER_ARM
+            and np.min(a_counts) < self.MIN_SAMPLES_TO_IGNORE_ARM
+        ):
+            raise NotEnoughRewardsPerArmError(
+                unique_rewards_per_arm=unique_rewards_per_arm
+            )
 
         if self.one_model_per_arm:
             self.models = []
@@ -289,7 +304,94 @@ class EpsGreedyConAgent(BaseContextualAgent):
 
     def take_agent_action(
         self, context: np.ndarray
-    ) -> Tuple[int, float]:  # the "take action" function of the base class is overridden
+    ) -> Tuple[
+        int, float
+    ]:  # the "take action" function of the base class is overridden
+        """
+        Takes one step for the agent.
+
+        According to the current context,
+        returns the action the agent chooses at that time step.
+
+        Parameters
+        ----------
+        context : np.ndarray (2D)
+            The context features for which to estimate rewards of each arm. Shape (1, n_context_features).
+
+        Returns
+        -------
+        int - the index of the current action.
+        float - the probability of selecting the action.
+        """
+        self.estimate_qvals(context)
+
+        # Select Action:
+        greedy_action, partial_greedy_prob, list_greedy_actions = argmax(
+            self.qvals,
+            self.rng,
+        )  # list_greedy_actions is useful to compute probabilities in case there are ties in the greedy action
+
+        current_action = greedy_action
+        prob_action = partial_greedy_prob  # we selected one of the greedy actions (it can be more than one in case of ties)
+
+        return current_action, prob_action
+
+    def reset_agent(self):
+        """Reset agent parameters such as arm counters."""
+        super().reset_agent()
+        self.model = None
+        self.models = None
+        self.qvals = []
+
+
+class EpsGreedyConAgent(GreedyConAgent):
+    """Epsilon Greedy Agent. Take Greedy action 1-epsilon% of times. Take random action epsilon% of times.
+
+    Parameters
+    ----------
+    arms : int
+        Number of arms (actions) available to the agent.
+    n_rounds_random : int, optional
+        Number of rounds to take random actions.
+    rng : np.random.Generator, optional
+        Random number generator for reproducibility. Default is a random generator with seed 42.
+    epsilon : float
+        Probability of taking a random action. Default is 0.1.
+    one_model_per_arm : bool
+        If True, the agent will maintain a separate model for each arm. If False, a single model will be used for all arms.
+    base_estimator : Union[RandomForestRegressor, RandomForestClassifier]
+        The base estimator to be used for fitting the reward model.
+    """
+
+    def __init__(  # noqa: PLR0913
+        self,
+        base_estimator: Union[
+            RandomForestRegressor, RandomForestClassifier
+        ],  # NOT PREPARED FOR CLASSIFICATION YET!
+        arms: int,
+        n_rounds_random: int = 200,
+        epsilon: float = 0.1,
+        one_model_per_arm: bool = True,
+        rng_seed=None,
+        min_rewards_per_arm: int = MIN_REWARDS_PER_ARM,
+        min_samples_to_ignore_arm: int = MIN_SAMPLES_TO_IGNORE_ARM,
+    ):
+        super().__init__(
+            base_estimator=base_estimator,
+            one_model_per_arm=one_model_per_arm,
+            arms=arms,
+            n_rounds_random=n_rounds_random,
+            rng_seed=rng_seed,
+            min_rewards_per_arm=min_rewards_per_arm,
+            min_samples_to_ignore_arm=min_samples_to_ignore_arm,
+        )  # it executes the __init__ function of the base class
+        self.epsilon = epsilon
+
+    def take_agent_action(
+        self, context: np.ndarray
+    ) -> Tuple[
+        int, float
+    ]:  # the "take action" function of the base class is overridden
         """
         Takes one step for the agent.
 
@@ -324,18 +426,13 @@ class EpsGreedyConAgent(BaseContextualAgent):
         if (
             current_action in list_greedy_actions
         ):  # we selected one of the greedy actions (it can be more than one in case of ties)
-            prob_action = (1 - self.epsilon) * partial_greedy_prob + self.epsilon * (1 / self.arms)
+            prob_action = (1 - self.epsilon) * partial_greedy_prob + self.epsilon * (
+                1 / self.arms
+            )
         else:  # we selected a non-greedy action
             prob_action = self.epsilon * (1 / self.arms)
 
         return current_action, prob_action
-
-    def reset_agent(self):
-        """Reset agent parameters such as arm counters."""
-        super().reset_agent()
-        self.model = None
-        self.models = None
-        self.qvals = []
 
 
 class BootStrapConAgent(BaseContextualAgent):
@@ -372,16 +469,22 @@ class BootStrapConAgent(BaseContextualAgent):
             arms=arms, n_rounds_random=n_rounds_random, rng_seed=rng_seed
         )  # it executes the __init__ function of the base class
         self.base_estimator = base_estimator
-        self.divisor_bootstrap = divisor_bootstrap  # controls how often we bootstrap the models
+        self.divisor_bootstrap = (
+            divisor_bootstrap  # controls how often we bootstrap the models
+        )
         # Choose the prediction function dynamically (.predict or .predict_proba)
         self.predfun = (
-            (lambda m, x: m.predict_proba(x)[:, 1])  # or another slice depending on needs
+            (
+                lambda m, x: m.predict_proba(x)[:, 1]
+            )  # or another slice depending on needs
             if is_classifier(self.base_estimator)
             else (lambda m, x: m.predict(x))
         )
         self.reset_agent()
 
-    def update_agent(self, c_train: np.ndarray, a_train: np.ndarray, r_train: np.ndarray) -> None:
+    def update_agent(
+        self, c_train: np.ndarray, a_train: np.ndarray, r_train: np.ndarray
+    ) -> None:
         """
         Update the agent's parameters based on the historical data. This method should be implemented by subclasses.
 
@@ -399,17 +502,25 @@ class BootStrapConAgent(BaseContextualAgent):
         narms_in_train = len(idx_arms)
 
         if narms_in_train != self.arms:
-            raise MismatchedArmNumberError(expected_arms=self.arms, actual_arms=narms_in_train)
+            raise MismatchedArmNumberError(
+                expected_arms=self.arms, actual_arms=narms_in_train
+            )
         if not np.issubdtype(a_train.dtype, np.integer):
-            raise ValueError(f"Expected a_train to be of integer type, but found {a_train.dtype}.")
+            raise ValueError(
+                f"Expected a_train to be of integer type, but found {a_train.dtype}."
+            )
         if idx_arms != list(range(self.arms)):
             raise ValueError(
                 f"Expected arms to be encoded in the range [0, {self.arms - 1}], but found arms: {self.idx_arms}."
             )
 
-        unique_rewards_per_arm = [len(np.unique(r_train[a_train == arm])) for arm in range(self.arms)]
+        unique_rewards_per_arm = [
+            len(np.unique(r_train[a_train == arm])) for arm in range(self.arms)
+        ]
         if min(unique_rewards_per_arm) < MIN_REWARDS_PER_ARM:
-            raise NotEnoughRewardsPerArmError(unique_rewards_per_arm=unique_rewards_per_arm)
+            raise NotEnoughRewardsPerArmError(
+                unique_rewards_per_arm=unique_rewards_per_arm
+            )
 
         self.models = []
         # Update the model for each arm separately
@@ -420,7 +531,7 @@ class BootStrapConAgent(BaseContextualAgent):
             # bootstrap sampling
             n_train = c_train_a.shape[0]
             n_samples = n_train
-            boot_indices = np.random.choice(n_train, size=n_samples, replace=True)
+            boot_indices = self.rng.choice(n_train, size=n_samples, replace=True)
 
             x_train = c_train_a[boot_indices]
             y_train = r_train_a[boot_indices]
@@ -457,7 +568,9 @@ class BootStrapConAgent(BaseContextualAgent):
 
     def take_agent_action(
         self, context: np.ndarray
-    ) -> Tuple[int, float]:  # the "take action" function of the base class is overridden
+    ) -> Tuple[
+        int, float
+    ]:  # the "take action" function of the base class is overridden
         """
         Takes one step for the agent.
 
@@ -484,9 +597,15 @@ class BootStrapConAgent(BaseContextualAgent):
 
         prob_action = np.nan  # probability is very time-consuming to be computed in this agent, so we set it to NaN.
 
-        if sum(self.arm_count) % self.divisor_bootstrap == 0:  # not executed always to avoid heavy computational cost
+        if (
+            sum(self.arm_count) % self.divisor_bootstrap == 0
+        ):  # not executed always to avoid heavy computational cost
             # Bootstrap a new sample of current training and retrain models in each arm for next time that .take_action() is called
-            self.update_agent(c_train=self.last_c_train, a_train=self.last_a_train, r_train=self.last_r_train)
+            self.update_agent(
+                c_train=self.last_c_train,
+                a_train=self.last_a_train,
+                r_train=self.last_r_train,
+            )
 
         return current_action, prob_action
 
@@ -495,3 +614,380 @@ class BootStrapConAgent(BaseContextualAgent):
         super().reset_agent()
         self.models = None
         self.qvals = []
+
+
+class BaseTreeEnsembleContextualAgent(GreedyConAgent):
+    # It inherits from GreedyConAgent to have base init method and to have update_agent() method for hybrid and disjoint models.
+    """Epsilon Greedy Agent. Take Greedy action 1-epsilon% of times. Take random action epsilon% of times.
+
+    Parameters
+    ----------
+    arms : int
+        Number of arms (actions) available to the agent.
+    n_rounds_random : int, optional
+        Number of rounds to take random actions.
+    rng : np.random.Generator, optional
+        Random number generator for reproducibility. Default is a random generator with seed 42.
+    epsilon : float
+        Probability of taking a random action. Default is 0.1.
+    one_model_per_arm : bool
+        If True, the agent will maintain a separate model for each arm. If False, a single model will be used for all arms.
+    base_estimator : Union[RandomForestRegressor, RandomForestClassifier]
+        The base estimator to be used for fitting the reward model.
+    """
+
+    def __init__(  # noqa: PLR0913
+        self,
+        arms: int,
+        n_rounds_random: int = 200,
+        base_model: Union[
+            RandomForestClassifier, RandomForestRegressor
+        ] = RandomForestClassifier(
+            criterion="log_loss",  # very important to have accurate probabilities
+            min_samples_leaf=20,
+            max_samples=None,  # very important _set_train_data_per_tree logic is created based on this assumption
+            max_depth=3,
+            random_state=42,
+        ),
+        vpar: float = 1.0,
+        one_model_per_arm: bool = True,
+        rng_seed=None,
+        min_rewards_per_arm: int = MIN_REWARDS_PER_ARM,
+        min_samples_to_ignore_arm: int = MIN_SAMPLES_TO_IGNORE_ARM,
+    ):
+        super().__init__(
+            base_estimator=RandForestHandler(base_model=base_model),
+            one_model_per_arm=one_model_per_arm,
+            arms=arms,
+            n_rounds_random=n_rounds_random,
+            rng_seed=rng_seed,
+            min_rewards_per_arm=min_rewards_per_arm,
+            min_samples_to_ignore_arm=min_samples_to_ignore_arm,
+        )  # it executes the __init__ function of the base class
+        self.vpar = vpar  # controls the amount of exploration
+
+    def partial_fast_update(
+        self, c_train: np.ndarray, a_train: np.ndarray, r_train: np.ndarray
+    ) -> None:
+        """
+        Fast Update of the agent's parameters based on the new data.
+
+        Parameters
+        ----------
+        c_train : np.ndarray (2D). Shape (n_samples, n_context_features).
+            The context features for the training data samples. Just the new data to be added.
+        a_train : np.ndarray (2D). Shape (n_samples, ). Just the new data to be added.
+            The arms selected for each training data sample.
+        r_train : np.ndarray. Shape (n_samples, ).
+            The obtained reward for each training data sample. Just the new data to be added.
+        """
+        if self.update_agent_counts == 0:
+            raise AgentNotFullyUpdatedError(
+                "You must call the full update_agent() method before calling partial_fast_update()."
+            )
+
+        c_train = np.concatenate([self.last_c_train, c_train], axis=0)
+        a_train = np.concatenate([self.last_a_train, a_train], axis=0)
+        r_train = np.concatenate([self.last_r_train, r_train], axis=0)
+
+        a_unique, a_counts = np.unique(a_train, return_counts=True)
+        idx_arms = list(np.sort(a_unique))
+        narms_in_train = len(idx_arms)
+
+        if narms_in_train != self.arms:
+            raise MismatchedArmNumberError(
+                expected_arms=self.arms, actual_arms=narms_in_train
+            )
+        if not np.issubdtype(a_train.dtype, np.integer):
+            raise ValueError(
+                f"Expected a_train to be of integer type, but found {a_train.dtype}."
+            )
+        if idx_arms != list(range(self.arms)):
+            raise ValueError(
+                f"Expected arms to be encoded in the range [0, {self.arms - 1}], but found arms: {self.idx_arms}."
+            )
+
+        if self.one_model_per_arm:
+            self.models = []
+            # Update the model for each arm separately
+            for arm in self.idx_arms:
+                x_train = c_train[a_train == arm]
+                y_train = r_train[a_train == arm]
+
+                x_pertree = [x_train for _ in range(len(self.models[arm].estimators_))]
+                y_pertree = [y_train for _ in range(len(self.models[arm].estimators_))]
+
+                self.models[arm].set_data_per_tree(x_pertree, y_pertree)
+
+        else:
+            # Update a single model for all arms
+            x_train = np.column_stack((c_train, a_train))
+            y_train = r_train
+            self.model.set_data_per_tree(
+                [x_train for _ in range(len(self.model.estimators_))],
+                [y_train for _ in range(len(self.model.estimators_))],
+            )
+
+        self.fast_updates_count += 1
+        self.last_c_train = c_train
+        self.last_a_train = a_train
+        self.last_r_train = r_train
+
+    def estimate_means_vars(self, context: np.ndarray) -> List[np.ndarray]:
+        """
+        Estimate Q-values for each arm given the context.
+
+        Parameters
+        ----------
+        context : np.ndarray (2D)
+            The context features for which to estimate rewards of each arm. Shape (1, n_context_features).
+
+        Returns
+        -------
+        List[np.ndarray] - A list of Q-values/rewards for each arm.
+            Each element is a numpy array of shape (1,).
+            It seems that this arrays with single elements work as a float
+            number but with the advantages of being a numpy type, so we left the input this way.
+        """
+        if self.one_model_per_arm:
+            preds = [self.predfun(model, context) for model in self.models]
+            self.means, self.vars, self.counts = map(list, zip(*preds))
+            ### then same than the following but optimized:
+            # self.means = [self.predfun(model, context)[0] for model in self.models]
+            # self.vars = [self.predfun(model, context)[1] for model in self.models]
+            # self.counts = [self.predfun(model, context)[2] for model in self.models]
+        else:
+            preds = [
+                self.predfun(
+                    self.model,
+                    np.hstack((context, np.array([[arm]]))),
+                )
+                for arm in self.idx_arms
+            ]
+
+            self.means, self.vars, self.counts = map(list, zip(*preds))
+            # ### then same than the following but optimized:
+            # self.means = [
+            #     self.predfun(
+            #         self.model,
+            #         np.hstack((context, np.array([[arm]]))),
+            #     )[0]
+            #     for arm in self.idx_arms
+            # ]
+            # self.vars = [
+            #     self.predfun(
+            #         self.model,
+            #         np.hstack((context, np.array([[arm]]))),
+            #     )[1]
+            #     for arm in self.idx_arms
+            # ]
+
+    def sample_qvals(self):
+        """Sample Q-values from current distribution."""
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    def take_agent_action(self, context: np.ndarray) -> Tuple[int, float]:
+        """
+        Takes one step for the agent according to the current context.
+
+        Parameters
+        ----------
+        context : np.ndarray (2D)
+            The context features for which to estimate rewards of each arm. Shape (1, n_context_features).
+
+        Returns
+        -------
+        int - the index of the current action.
+        float - the probability of selecting the action.
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    def reset_agent(self):
+        """Reset agent parameters such as arm counters."""
+        super().reset_agent()
+        self.means = []
+        self.vars = []
+        self.last_qval_samples = [None for _ in self.idx_arms]
+        self.fast_updates_count = 0
+
+
+class RandomForestTsAgent(BaseTreeEnsembleContextualAgent):
+    def __init__(
+        self,
+        samples_for_freq_est: int = 100,  # Only TS agent needs this parameter
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.samples = samples_for_freq_est  # number of samples to estimate the probabilities of each arm of being selected.
+
+    def _freq_arms(self) -> Dict[int, float]:
+        """Return the chosen frequency of each arm.
+
+        Returns
+        -------
+        dict[int, float] - dictionary that maps the arm index to the frequency.
+        """
+        try:
+            list_idxs = []
+            for _ in range(self.samples):
+                idx, _, _ = argmax(
+                    self.sample_qvals(),
+                    self.rng,
+                )
+                list_idxs.append(idx)
+
+            unique, counts = np.unique(list_idxs, return_counts=True)
+            dic_arm_freq = dict(zip(unique, counts / len(list_idxs), strict=True))
+
+            # if there is an action that never was chosen, we assign a frequency of None. This indicates that we were not able to estimate the frequency with the samples we took.
+            dic_arm_freq.update(
+                {arm: None for arm in self.idx_arms if arm not in dic_arm_freq.keys()}
+            )
+        except Exception as e:
+            print(f"Error estimating frequency of arms' selection: {e}")
+            raise e
+
+        return dic_arm_freq
+
+    def sample_qvals(self):
+        """Sample Q-values from current distribution."""
+        return [
+            self.rng.normal(self.means[arm], np.sqrt(self.vpar * self.vars[arm]))
+            for arm in self.idx_arms
+        ]
+
+    def take_agent_action(
+        self, context: np.ndarray
+    ) -> Tuple[
+        int, float
+    ]:  # the "take action" function of the base class is overridden
+        """
+        Takes one step for the agent.
+
+        According to the current context,
+        returns the action the agent chooses at that time step.
+
+        Parameters
+        ----------
+        context : np.ndarray (2D)
+            The context features for which to estimate rewards of each arm. Shape (1, n_context_features).
+
+        Returns
+        -------
+        int - the index of the current action.
+        float - the probability of selecting the action.
+        """
+        self.estimate_means_vars(context)
+        qval_samples = self.sample_qvals()
+
+        # Select Action:
+        current_action, _, _ = argmax(
+            qval_samples,
+            self.rng,
+        )  # list_greedy_actions is useful to compute probabilities in case there are ties in the greedy action
+
+        prob_action = self._freq_arms()[current_action]
+
+        self.last_qval_samples = qval_samples
+
+        return current_action, prob_action
+
+
+class RandomForestUcbAgent(BaseTreeEnsembleContextualAgent):
+    ### OPTION 0. Exact Paper formula.
+    def sample_qvals(self):
+        """Sample Q-values from current distribution."""
+        total_learning = len(self.last_a_train)  # Total number of rounds
+        qval_samples = []
+        for arm in self.idx_arms:
+            arm_count = self.counts[arm]  # Original paper count
+            qval_samples.append(
+                self.means[arm]
+                + np.sqrt(
+                    self.vpar * self.vars[arm] * np.log(total_learning - 1) / arm_count
+                )
+            )
+
+        return qval_samples
+
+    ### OPTION 1. Formula closer to the one used for multi-armed bandits for total_learning and arm_count.
+    # def sample_qvals(self):
+    #     """Sample Q-values from current distribution."""
+    #     total_learning = len(self.last_a_train) # Total number of rounds
+    #     qval_samples = []
+    #     for arm in self.idx_arms:
+    #         arm_count = len(self.last_a_train[self.last_a_train == arm]) # The original paper does not use this count. Uses all the counts in each subtree. This alternative option seems better for me.
+    #         qval_samples.append(
+    #             self.means[arm] + np.sqrt(self.vpar * self.vars[arm] * np.log(total_learning - 1)/arm_count)
+    #             )
+
+    #     return qval_samples
+
+    ### OPTION 2. Formula closer to the one used for multi-armed bandits for total_learning and arm_count.
+    # def sample_qvals(self):
+    #     """Sample Q-values from current distribution."""
+    #     total_learning = len(self.last_a_train) * self.base_estimator.base_model.n_estimators # Total number of samples x n of trees (total number of bootstrapped samples used to train the trees).
+    #     qval_samples = []
+    #     for arm in self.idx_arms:
+    #         arm_count = self.counts[arm] # Original paper count
+    #         qval_samples.append(
+    #             self.means[arm] + np.sqrt(self.vpar * self.vars[arm] * np.log(total_learning - 1)/arm_count)
+    #             )
+
+    #     return qval_samples
+
+    ### OPTION 3. Formula I think is more suitable, adapting total_learning and arm_count to have similar behaviour than what we expect in mab ucb.
+    ### It is OPTION 2, but dividing total_learning and arm_count by n_estimators.
+    # def sample_qvals(self):
+    #     """Sample Q-values from current distribution."""
+    #     total_learning = len(self.last_a_train) # Total number of rounds
+    #     qval_samples = []
+    #     for arm in self.idx_arms:
+    #         arm_count = self.counts[arm] / self.base_estimator.base_model.n_estimators # We divide by n_estimators to have the average count of the used bootstrapped samples.
+    #         qval_samples.append(
+    #             self.means[arm] + np.sqrt(self.vpar * self.vars[arm] * np.log(total_learning - 1)/arm_count)
+    #             )
+
+    #     return qval_samples
+
+    def take_agent_action(
+        self, context: np.ndarray
+    ) -> Tuple[
+        int, float
+    ]:  # the "take action" function of the base class is overridden
+        """
+        Takes one step for the agent.
+
+        According to the current context,
+        returns the action the agent chooses at that time step.
+
+        Parameters
+        ----------
+        context : np.ndarray (2D)
+            The context features for which to estimate rewards of each arm. Shape (1, n_context_features).
+
+        Returns
+        -------
+        int - the index of the current action.
+        float - the probability of selecting the action.
+        """
+        self.estimate_means_vars(context)
+        qval_samples = self.sample_qvals()
+
+        # Select Action:
+        current_action, prob_action, _ = argmax(
+            qval_samples,
+            self.rng,
+        )  # list_greedy_actions is useful to compute probabilities in case there are ties in the greedy action
+
+        self.last_qval_samples = qval_samples
+        self.last_choice_uncertainties = np.array(qval_samples) - np.array(self.means)
+
+        return current_action, prob_action
+
+    def reset_agent(self):
+        """Reset agent parameters such as arm counters."""
+        super().reset_agent()
+        self.last_choice_uncertainties = np.array(
+            [float("inf") for _ in range(self.arms)]
+        )

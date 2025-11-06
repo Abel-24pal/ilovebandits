@@ -2,11 +2,18 @@ Introduction
 ============
 
 ``ilovebandits`` is a high-level Python package to work with contextual and multiarmed bandits with
-some extended features. In essence, this package adds novel ensemble of trees techniques
-for contextual bandits and the concept of composed rewards where you can feed the bandit with different type rewards in time.
+new released algorithms. In essence, this package adds novel ensemble of trees techniques
+for contextual bandits that the industry demands and that are not currently available in other places.
+
+This package was born due to the need of having more advanced bandit algorithms and features for the finance industry.
+
+Next version will also add the concept of composed rewards where you can feed the bandit with different type rewards in time
+as this was a requirement that a lot of problems face.
 
 The implementation has been developed in Python 3.
-We are currently in a pre-alpha version focusing on adding core features and stabilizing architecture
+We are currently in the first version focusing on adding more core features and collecting feedback from the community.
+
+See :doc:`installation guide <installation>` for installation instructions.
 
 Motivation
 **********
@@ -29,7 +36,7 @@ This package is intended to provide a quick, as well as (hopefully) easy to unde
 Current version
 ***************
 
-In latest version 0.1.0a2, we have:
+In latest version 0.1.1, we have:
 
 - Multi-armed bandits (MAB):
 
@@ -39,6 +46,8 @@ In latest version 0.1.0a2, we have:
 - Contextual bandit algorithms:
 
   - Epsilon-Greedy with a big flexibility for the base model. For example, `XGBoost`_ or `LightGBM`_ can be used to learn the rewards from features.
+  - Greedy with the same flexibility for the base model.
+  - RandomForestUcbAgent and RandomForestTsAgent that extend the UCB and Thompson Sampling strategies for Random Forests to learn the rewards from features.
   - BootStrapConAgent. It tries to simulate Thompson Sampling with the advantage of using any base model. For example, ensembles of trees can be used to learn the rewards from features (experimental)
 
 - Environment simulator based on Statlog Shuttle dataset. (Dataset employed for many research papers on bandits. It can be obtained from `UCI Machine Learning Repository`_).
@@ -49,10 +58,13 @@ In latest version 0.1.0a2, we have:
 
 Core features planned to be added:
 
-- Delayed rewards for MAB and contextual bandits.
 - Composed rewards for MAB and contextual bandits.
 - More contextual bandit algorithms with a special emphasis on ensemble of trees methods.
-- Environment simulators
+- Additional Environment simulators
+
+Tutorials and examples
+************************
+Several how-to examples and tutorials are provided in the :doc:`mab examples <examples_mab>` and :doc:`contextual bandits examples <examples_cban>` sections.
 
 Limitations
 ***********

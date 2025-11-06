@@ -4,6 +4,7 @@ pytest -v --tb=long #add -s argument to see the print of successful tests
 
 ###### launch with debugger:
 pytest -v -s --tb=long
+pytest -v -s --tb=long src/ilovebandits/tests/cbandits/test_agents.py
 # import pdb
 # pdb.set_trace()
 
