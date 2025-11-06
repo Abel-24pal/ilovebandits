@@ -30,10 +30,10 @@ In :class:`ilovebandits.mab.agents.TSAgent` (Thompson sampling agent), the rewar
 By default, it assumes a :math:`Bernoulli(p)` reward distribution and a initial belief defined by a :math:`Beta(\alpha=1, \beta=1)` distribution.
 This initial belief can be changed just instantiating :class:`ilovebandits.mab.agents.TSAgent` with different :math:`\alpha` and :math:`\beta` parameters using the arguments a_init and b_init.
 
-In the :class:`ilovebandits.mab.agents.EpsilonGreedyAgent`, the epsilon parameter controls the exploration-exploitation trade-off.
+In the :class:`ilovebandits.mab.agents.EpsilonGreedyAgent`, the ``epsilon`` parameter controls the exploration-exploitation trade-off.
 A value of 0.1 means that the agent will explore 10% of the time and exploit 90% of the time.
 
-In the :class:`ilovebandits.mab.agents.UCBAgent`, the c parameter controls the exploration-exploitation trade-off. The bigger the value of c, the stronger the exploration the agent will do.
+In the :class:`ilovebandits.mab.agents.UCBAgent`, the ``c`` parameter controls the exploration-exploitation trade-off. The bigger the value of ``c``, the stronger the exploration the agent will do.
 
 Once the agent is initialized, you can use it to select an action and update it with the observed reward.
 
