@@ -56,7 +56,7 @@ class BaseContextualAgent:
         else:
             self.rng = np.random.default_rng(seed=rng_seed)
 
-        self.reset_agent()
+        #  Note: self.reset_agent() should be called in the subclasses after initializing their specific parameters
 
     def take_action(self, context) -> Tuple[int, float]:
         """
@@ -248,24 +248,21 @@ class GreedyConAgent(BaseContextualAgent):
             )
 
         if self.one_model_per_arm:
-            self.models = []
             # Update the model for each arm separately
             for arm in range(self.arms):
                 x_train = c_train[a_train == arm]
                 y_train = r_train[a_train == arm]
 
-                self.models.append(
-                    clone(self.base_estimator).fit(
-                        x_train,
-                        y_train,
-                    )
+                self.models[arm].fit(
+                    x_train,
+                    y_train,
                 )
 
         else:
             # Update a single model for all arms
             x_train = np.column_stack((c_train, a_train))
             y_train = r_train
-            self.model = clone(self.base_estimator).fit(
+            self.model.fit(
                 x_train,
                 y_train,
             )
@@ -339,8 +336,13 @@ class GreedyConAgent(BaseContextualAgent):
     def reset_agent(self):
         """Reset agent parameters such as arm counters."""
         super().reset_agent()
-        self.model = None
-        self.models = None
+        if self.one_model_per_arm:
+            self.models = [clone(self.base_estimator) for _ in range(self.arms)]
+            self.model = None
+        else:
+            self.models = None
+            self.model = clone(self.base_estimator)
+
         self.qvals = []
 
 
@@ -522,7 +524,6 @@ class BootStrapConAgent(BaseContextualAgent):
                 unique_rewards_per_arm=unique_rewards_per_arm
             )
 
-        self.models = []
         # Update the model for each arm separately
         for arm in range(self.arms):
             c_train_a = c_train[a_train == arm]
@@ -536,11 +537,9 @@ class BootStrapConAgent(BaseContextualAgent):
             x_train = c_train_a[boot_indices]
             y_train = r_train_a[boot_indices]
 
-            self.models.append(
-                clone(self.base_estimator).fit(
-                    x_train,
-                    y_train,
-                )
+            self.models[arm].fit(
+                x_train,
+                y_train,
             )
 
         self.update_agent_counts += 1
@@ -612,7 +611,7 @@ class BootStrapConAgent(BaseContextualAgent):
     def reset_agent(self):
         """Reset agent parameters such as arm counters."""
         super().reset_agent()
-        self.models = None
+        self.models = [clone(self.base_estimator) for _ in range(self.arms)]
         self.qvals = []
 
 

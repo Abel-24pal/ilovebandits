@@ -3,6 +3,8 @@
 from typing import List, Tuple
 
 import numpy as np
+from sklearn.utils.validation import check_is_fitted
+from sklearn.exceptions import NotFittedError
 
 
 # Arg max that solves ties randomly:
@@ -56,3 +58,11 @@ def find_max_indices(numbers: List) -> List:
     max_indices = [index for index, value in enumerate(numbers) if value == max_value]
 
     return max_indices
+
+
+def is_fitted(model) -> bool:
+    try:
+        check_is_fitted(model)
+        return True
+    except NotFittedError:
+        return False
