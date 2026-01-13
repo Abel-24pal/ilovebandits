@@ -707,7 +707,6 @@ class BaseTreeEnsembleContextualAgent(GreedyConAgent):
             )
 
         if self.one_model_per_arm:
-            self.models = []
             # Update the model for each arm separately
             for arm in self.idx_arms:
                 x_train = c_train[a_train == arm]
