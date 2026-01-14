@@ -13,7 +13,7 @@ We are currently in the first version focusing on adding more core features and 
 
 # Installation
 
-**Installation/Usage**: [Installation/Usage details in official docs](https://ilovebandits.readthedocs.io/en/latest/examples.html)
+**Installation/Usage**: [Installation/Usage details in official docs](https://ilovebandits.readthedocs.io/en/latest/installation.html)
 
 # Documentation
 

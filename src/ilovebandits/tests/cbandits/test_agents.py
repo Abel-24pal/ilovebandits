@@ -20,6 +20,7 @@ from src.ilovebandits.exceptions import AgentNotFullyUpdatedError
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 from sklearn.base import clone
+from src.ilovebandits.utils import is_fitted
 
 RANDOM_SEED = 42
 
@@ -124,12 +125,19 @@ def test_eps_agent_initialization(eps_pars, arms, feats):
     assert eps_agent.n_rounds_random == eps_pars["n_rounds_random"]
     assert eps_agent.epsilon == eps_pars["epsilon"]
     assert eps_agent.one_model_per_arm == eps_pars["one_model_per_arm"]
-    assert eps_agent.model is None
-    assert eps_agent.models is None
     assert eps_agent.update_agent_counts == 0
-
     assert eps_agent.arm_count == [0.0 for _ in range(eps_agent.arms)]
     assert eps_agent.last_action is None
+    if eps_agent.one_model_per_arm:
+        assert eps_agent.models is not None
+        assert eps_agent.model is None
+        for model in eps_agent.models:
+            assert not is_fitted(model)
+    else:
+        assert eps_agent.models is None
+        assert eps_agent.model is not None
+        assert not is_fitted(eps_agent.model)
+
     ####### END --- CREATE AGENT ########
     dummy_context = np.ones((1, feats))
 

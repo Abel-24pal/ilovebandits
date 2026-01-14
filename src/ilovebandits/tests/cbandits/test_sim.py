@@ -9,9 +9,15 @@ from sklearn.ensemble import RandomForestClassifier
 from src.ilovebandits.agents import EpsGreedyConAgent
 from src.ilovebandits.data_bandits.base import DataBasedBanditFromPandas
 from src.ilovebandits.data_bandits.utils import GenrlBanditDataLoader
-from src.ilovebandits.sim import NoRewardsReceivedError, NotAbleToUpdateBanditError, SimContBandit, SimMabBandit
+from src.ilovebandits.sim import (
+    NoRewardsReceivedError,
+    NotAbleToUpdateBanditError,
+    SimContBandit,
+    SimMabBandit,
+)
 from src.ilovebandits.mab.agents import GreedyAgent
 from src.ilovebandits.mab.q_estimators import QEstMean
+from src.ilovebandits.utils import is_fitted
 
 RANDOM_SEED = 42
 RANDOM_STATE = 42
@@ -82,7 +88,9 @@ def cbandit_delay_sim(request, pars_simcontban, dataset_for_sims):
     reward_delay = request.param
 
     iterations = pars_simcontban["iterations"]
-    min_ites_to_train = pars_simcontban["min_ites_to_train"]  # minimum number of iterations to start training the agent
+    min_ites_to_train = pars_simcontban[
+        "min_ites_to_train"
+    ]  # minimum number of iterations to start training the agent
     update_factor = pars_simcontban[
         "update_factor"
     ]  # if 1, it updates the model every iteration, if 2, it updates every two iterations, etc.
@@ -125,11 +133,19 @@ def test_reset_cban_simulator(cbandit_delay_sim):
     simulator = cbandit_delay_sim["simulator"]
 
     # Before resetting
-    assert not np.all(np.isclose(simulator.agent.arm_count, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5))
     if simulator.agent.one_model_per_arm:
         assert simulator.agent.models is not None
+        for model in simulator.agent.models:
+            assert is_fitted(model)
     else:
         assert simulator.agent.model is not None
+        assert is_fitted(simulator.agent.model)
+
+    assert not np.all(
+        np.isclose(
+            simulator.agent.arm_count, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5
+        )
+    )
     assert simulator.agent.update_agent_counts != 0
     assert simulator.agent.last_action is not None
     assert simulator.agent.qvals != []
@@ -139,9 +155,19 @@ def test_reset_cban_simulator(cbandit_delay_sim):
     simulator.reset_agent_and_env()
 
     # After resetting:
-    assert np.all(np.isclose(simulator.agent.arm_count, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5))
-    assert simulator.agent.model is None
-    assert simulator.agent.models is None
+    if simulator.agent.one_model_per_arm:
+        assert simulator.agent.models is not None
+        for model in simulator.agent.models:
+            assert not is_fitted(model)
+    else:
+        assert simulator.agent.model is not None
+        assert not is_fitted(simulator.agent.model)
+
+    assert np.all(
+        np.isclose(
+            simulator.agent.arm_count, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5
+        )
+    )
     assert simulator.agent.update_agent_counts == 0
     assert simulator.agent.last_action is None
     assert simulator.agent.qvals == []
@@ -159,10 +185,14 @@ def test_cban_sim(cbandit_delay_sim):
     assert len(res["actions"]) == iterations
     assert len(res["prob_actions"]) == iterations
     assert iterations == sum(res["agent"].arm_count)
-    assert len(res["reward_heap"]) == reward_delay  # No reward delay, so the heap should be empty
+    assert (
+        len(res["reward_heap"]) == reward_delay
+    )  # No reward delay, so the heap should be empty
 
     actions_taken = pd.DataFrame(res["actions"], columns=["arm"])
-    actions_taken["ite"] = actions_taken.index + 1  # Adjust index to start from 1. Iterations start at 1.
+    actions_taken["ite"] = (
+        actions_taken.index + 1
+    )  # Adjust index to start from 1. Iterations start at 1.
     rew_agent = pd.DataFrame(res["rew_agent"])
 
     assert (
@@ -201,7 +231,9 @@ def test_cban_sim(cbandit_delay_sim):
         ite_train
     ]  # note: position ite_train corresponds to prob_arm taken at iteration "ite_train + 1". This is because iterations start at 1, but array starts at index 0.
 
-    assert df_train.shape[0] == ite_train - reward_delay  # this should be true if delays are 0
+    assert (
+        df_train.shape[0] == ite_train - reward_delay
+    )  # this should be true if delays are 0
     assert a_exp == a_act
     assert prob_a_act == pytest.approx(prob_a_exp, rel=1e-6, abs=1e-12)
 
@@ -224,7 +256,9 @@ def test_cban_sim(cbandit_delay_sim):
 def test_update_bandit_error(dataset_for_sims):
     """Test that the NotAbleToUpdateBanditError is raised when the agent cannot be updated."""
     iterations = 1000
-    min_ites_to_train = iterations // 10  # minimum number of iterations to start training the agent
+    min_ites_to_train = (
+        iterations // 10
+    )  # minimum number of iterations to start training the agent
     update_factor = iterations // 10
     reward_delay = iterations // 10
     min_samples_to_ignore_arm = iterations  # Set a value that will force the error
@@ -259,9 +293,13 @@ def test_update_bandit_error(dataset_for_sims):
 def test_no_rewards_error(dataset_for_sims):
     """Test that the NoRewardsReceivedError is raised when no rewards are received."""
     iterations = 1000
-    min_ites_to_train = iterations // 10  # minimum number of iterations to start training the agent
+    min_ites_to_train = (
+        iterations // 10
+    )  # minimum number of iterations to start training the agent
     update_factor = iterations // 10
-    reward_delay = iterations + 1  # Set a reward delay longer than the number of iterations to force the error
+    reward_delay = (
+        iterations + 1
+    )  # Set a reward delay longer than the number of iterations to force the error
 
     model_env = DataBasedBanditFromPandas(
         df=dataset_for_sims,
@@ -294,9 +332,17 @@ def test_reset_mab_simulator(mab_delay_sim):
     simulator = mab_delay_sim["simulator"]
 
     # Before resetting
-    assert not np.all(np.isclose(simulator.agent.arm_count, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5))
     assert not np.all(
-        np.isclose(simulator.agent.q_estimator.arm_count_updates, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5)
+        np.isclose(
+            simulator.agent.arm_count, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5
+        )
+    )
+    assert not np.all(
+        np.isclose(
+            simulator.agent.q_estimator.arm_count_updates,
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            rtol=1e-5,
+        )
     )
     assert simulator.agent.last_action is not None
     assert simulator.model_env.idx != 0
@@ -305,9 +351,17 @@ def test_reset_mab_simulator(mab_delay_sim):
     simulator.reset_agent_and_env()
 
     # After resetting:
-    assert np.all(np.isclose(simulator.agent.arm_count, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5))
     assert np.all(
-        np.isclose(simulator.agent.q_estimator.arm_count_updates, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5)
+        np.isclose(
+            simulator.agent.arm_count, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], rtol=1e-5
+        )
+    )
+    assert np.all(
+        np.isclose(
+            simulator.agent.q_estimator.arm_count_updates,
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            rtol=1e-5,
+        )
     )
     assert simulator.agent.last_action is None
     assert simulator.model_env.idx == 0
@@ -323,11 +377,17 @@ def test_mab_sim(mab_delay_sim):
     assert len(res["actions"]) == iterations
     assert len(res["prob_actions"]) == iterations
     assert iterations == sum(res["agent"].arm_count)
-    assert (iterations - reward_delay) == sum(res["agent"].q_estimator.arm_count_updates)
-    assert len(res["reward_heap"]) == reward_delay  # No reward delay, so the heap should be empty
+    assert (iterations - reward_delay) == sum(
+        res["agent"].q_estimator.arm_count_updates
+    )
+    assert (
+        len(res["reward_heap"]) == reward_delay
+    )  # No reward delay, so the heap should be empty
 
     actions_taken = pd.DataFrame(res["actions"], columns=["arm"])
-    actions_taken["ite"] = actions_taken.index + 1  # Adjust index to start from 1. Iterations start at 1.
+    actions_taken["ite"] = (
+        actions_taken.index + 1
+    )  # Adjust index to start from 1. Iterations start at 1.
     rew_agent = pd.DataFrame(res["rew_agent"])
 
     assert (
@@ -339,6 +399,13 @@ def test_mab_sim(mab_delay_sim):
         rew_agent[["ite", "arm"]].values,
     )
 
-    exp_qvals = [rew_agent.query("arm==@arm")["reward"].mean() for arm in range(res["agent"].arms)]
-    exp_qvals = [0 if np.isnan(x) else x for x in exp_qvals]  # if action does not exist, it will be NaN
-    npt.assert_allclose(actual=res["qvals"][-1], desired=exp_qvals, rtol=1e-7, atol=1e-8)
+    exp_qvals = [
+        rew_agent.query("arm==@arm")["reward"].mean()
+        for arm in range(res["agent"].arms)
+    ]
+    exp_qvals = [
+        0 if np.isnan(x) else x for x in exp_qvals
+    ]  # if action does not exist, it will be NaN
+    npt.assert_allclose(
+        actual=res["qvals"][-1], desired=exp_qvals, rtol=1e-7, atol=1e-8
+    )
