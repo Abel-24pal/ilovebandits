@@ -3,28 +3,15 @@
 import collections
 import heapq
 from copy import deepcopy
-from typing import Tuple
 
 import numpy as np
 
-from .agents import MismatchedArmNumberError, NotEnoughRewardsPerArmError
-
-
-class NotAbleToUpdateBanditError(Exception):
-    """Exception raised when it was not possible to update the bandit during the whole simulation."""
-
-    def __init__(self, info_last_ite_failed: Tuple):
-        super().__init__(
-            f"Bandit not updated in the whole simulation. Last time the update failed was (ite, exception) = {info_last_ite_failed}."
-        )
-        self.info_last_ite_failed = info_last_ite_failed
-
-
-class NoRewardsReceivedError(Exception):
-    """Exception raised when no rewards were received during the simulation."""
-
-    def __init__(self):
-        super().__init__("No rewards were received during the simulation.")
+from .exceptions import (
+    MismatchedArmNumberError,
+    NoRewardsReceivedError,
+    NotAbleToUpdateBanditError,
+    NotEnoughRewardsPerArmError,
+)
 
 
 class SimContBandit:
@@ -73,7 +60,10 @@ class SimContBandit:
             heapq.heappush(
                 reward_heap,
                 RI(
-                    ite=ite + r_delay, arm=a_idx, context=context.ravel().tolist(), reward=r
+                    ite=ite + r_delay,
+                    arm=a_idx,
+                    context=context.ravel().tolist(),
+                    reward=r,
                 ),  # better save context as a list instead of np.array
             )
 
@@ -86,14 +76,20 @@ class SimContBandit:
                 self.res_hist["rew_agent"].append(rinfo)
 
             try:
-                if (ite > self.min_ites_to_train) and (ite % self.update_factor == 0) and (len(lc_train) > 0):
+                if (
+                    (ite > self.min_ites_to_train)
+                    and (ite % self.update_factor == 0)
+                    and (len(lc_train) > 0)
+                ):
                     # print(f"\n--> Iteration {ite}, updating agent with {len(lc_train)} samples")
 
                     c_train = np.array(lc_train)
                     a_train = np.array(la_train)
                     r_train = np.array(lr_train)
 
-                    self.agent.update_agent(c_train=c_train, a_train=a_train, r_train=r_train)
+                    self.agent.update_agent(
+                        c_train=c_train, a_train=a_train, r_train=r_train
+                    )
 
                     self.res_hist["ite_updated"].append((ite))
 
@@ -105,7 +101,9 @@ class SimContBandit:
             self.res_hist["prob_actions"].append(a_prob)
 
         self.res_hist["agent"] = deepcopy(self.agent)  # do a deep copy of the class
-        self.res_hist["model_env"] = deepcopy(self.model_env)  # do a deep copy of the class
+        self.res_hist["model_env"] = deepcopy(
+            self.model_env
+        )  # do a deep copy of the class
         self.res_hist["reward_heap"] = reward_heap
 
         print(f"Agent updated in iterations: {self.res_hist['ite_updated']}")
@@ -114,7 +112,9 @@ class SimContBandit:
             raise NoRewardsReceivedError()
 
         if len(self.res_hist["ite_updated"]) < 1:
-            raise NotAbleToUpdateBanditError(info_last_ite_failed=self.res_hist["ite_failed"][-1])
+            raise NotAbleToUpdateBanditError(
+                info_last_ite_failed=self.res_hist["ite_failed"][-1]
+            )
 
         return self.res_hist
 
@@ -162,7 +162,10 @@ class SimMabBandit:
             heapq.heappush(
                 reward_heap,
                 RI(
-                    ite=ite + r_delay, arm=a_idx, context=context.ravel().tolist(), reward=r
+                    ite=ite + r_delay,
+                    arm=a_idx,
+                    context=context.ravel().tolist(),
+                    reward=r,
                 ),  # better save context as a list instead of np.array
             )
 
@@ -177,7 +180,9 @@ class SimMabBandit:
             self.res_hist["prob_actions"].append(a_prob)
 
         self.res_hist["agent"] = deepcopy(self.agent)  # do a deep copy of the class
-        self.res_hist["model_env"] = deepcopy(self.model_env)  # do a deep copy of the class
+        self.res_hist["model_env"] = deepcopy(
+            self.model_env
+        )  # do a deep copy of the class
         self.res_hist["reward_heap"] = reward_heap
 
         return self.res_hist

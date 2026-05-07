@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 
 class MismatchedArmNumberError(Exception):
@@ -26,3 +26,20 @@ class AgentNotFullyUpdatedError(Exception):
     """Agent needs to be updated with update_agent() method at least once."""
 
     pass
+
+
+class NotAbleToUpdateBanditError(Exception):
+    """Exception raised when it was not possible to update the bandit during the whole simulation."""
+
+    def __init__(self, info_last_ite_failed: Tuple):
+        super().__init__(
+            f"Bandit not updated in the whole simulation. Last time the update failed was (ite, exception) = {info_last_ite_failed}."
+        )
+        self.info_last_ite_failed = info_last_ite_failed
+
+
+class NoRewardsReceivedError(Exception):
+    """Exception raised when no rewards were received during the simulation."""
+
+    def __init__(self):
+        super().__init__("No rewards were received during the simulation.")
