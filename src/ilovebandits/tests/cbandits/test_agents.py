@@ -21,8 +21,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 from sklearn.base import clone
 from src.ilovebandits.utils import is_fitted
-
-RANDOM_SEED = 42
+from src.ilovebandits.tests.test_constants import RANDOM_SEED, RANDOM_STATE
 
 dic_eps_pars = {
     "eps_pars_disjoint": {
@@ -51,31 +50,31 @@ pars_agents_err = {
     "rfts": RandomForestTsAgent(
         arms=4,
         vpar=1.0,
-        base_model=RandomForestRegressor(max_samples=None, random_state=RANDOM_SEED),
-        rng_seed=42,
+        base_model=RandomForestRegressor(max_samples=None, random_state=RANDOM_STATE),
+        rng_seed=RANDOM_SEED,
         one_model_per_arm=False,
         samples_for_freq_est=1,
     ),
     "rfts_disjoint": RandomForestTsAgent(
         arms=4,
         vpar=1.0,
-        base_model=RandomForestRegressor(max_samples=None, random_state=RANDOM_SEED),
-        rng_seed=42,
+        base_model=RandomForestRegressor(max_samples=None, random_state=RANDOM_STATE),
+        rng_seed=RANDOM_SEED,
         one_model_per_arm=True,
         samples_for_freq_est=1,
     ),
     "rfucb": RandomForestUcbAgent(
         arms=4,
         vpar=1.0,
-        base_model=RandomForestRegressor(max_samples=None, random_state=RANDOM_SEED),
-        rng_seed=42,
+        base_model=RandomForestRegressor(max_samples=None, random_state=RANDOM_STATE),
+        rng_seed=RANDOM_SEED,
         one_model_per_arm=False,
     ),
     "rfucb_disjoint": RandomForestUcbAgent(
         arms=4,
         vpar=1.0,
-        base_model=RandomForestRegressor(max_samples=None, random_state=RANDOM_SEED),
-        rng_seed=42,
+        base_model=RandomForestRegressor(max_samples=None, random_state=RANDOM_STATE),
+        rng_seed=RANDOM_SEED,
         one_model_per_arm=True,
     ),
 }
@@ -468,7 +467,7 @@ def test_mismatched_arm_number_error(data_hybrid, eps_pars_hybrid):
             min_samples_leaf=20,
             max_samples=None,  # very important _set_train_data_per_tree logic is created based on this assumption
             max_depth=3,
-            random_state=42,
+            random_state=RANDOM_STATE,
         ),
         rng_seed=RANDOM_SEED,
         one_model_per_arm=eps_pars_hybrid["one_model_per_arm"],
@@ -482,7 +481,7 @@ def test_mismatched_arm_number_error(data_hybrid, eps_pars_hybrid):
             min_samples_leaf=20,
             max_samples=None,  # very important _set_train_data_per_tree logic is created based on this assumption
             max_depth=3,
-            random_state=42,
+            random_state=RANDOM_STATE,
         ),
         rng_seed=RANDOM_SEED,
         one_model_per_arm=eps_pars_hybrid["one_model_per_arm"],
@@ -527,7 +526,7 @@ def test_not_enough_rewards_per_arm_error(data_hybrid, eps_pars_hybrid):
             min_samples_leaf=20,
             max_samples=None,  # very important _set_train_data_per_tree logic is created based on this assumption
             max_depth=3,
-            random_state=42,
+            random_state=RANDOM_STATE,
         ),
         rng_seed=RANDOM_SEED,
         one_model_per_arm=eps_pars_hybrid["one_model_per_arm"],
@@ -540,7 +539,7 @@ def test_not_enough_rewards_per_arm_error(data_hybrid, eps_pars_hybrid):
             min_samples_leaf=20,
             max_samples=None,  # very important _set_train_data_per_tree logic is created based on this assumption
             max_depth=3,
-            random_state=42,
+            random_state=RANDOM_STATE,
         ),
         rng_seed=RANDOM_SEED,
         one_model_per_arm=eps_pars_hybrid["one_model_per_arm"],
@@ -716,14 +715,14 @@ def test_tree_ensemble_ts(rfhandler_toy_prob):
         criterion="squared_error",
         max_samples=None,
         # n_jobs=N_CORES,
-        random_state=42,
+        random_state=RANDOM_STATE,
     )
 
     rfts_agent = RandomForestTsAgent(
         arms=arms,
         vpar=vpar,
         base_model=clone(rf_model),
-        rng_seed=42,
+        rng_seed=RANDOM_SEED,
         one_model_per_arm=False,
         samples_for_freq_est=20_000,
         n_rounds_random=0,
@@ -788,14 +787,14 @@ def test_tree_ensemble_ucb(rfhandler_toy_prob):
         max_depth=max_depth,
         criterion="squared_error",
         max_samples=None,
-        random_state=42,
+        random_state=RANDOM_STATE,
     )
 
     rfucb_agent = RandomForestUcbAgent(
         arms=arms,
         vpar=1.0,
         base_model=rf_model,
-        rng_seed=42,
+        rng_seed=RANDOM_SEED,
         one_model_per_arm=False,
         n_rounds_random=0,
         min_rewards_per_arm=0,

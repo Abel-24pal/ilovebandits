@@ -7,8 +7,10 @@ import pytest
 
 from src.ilovebandits.data_bandits.base import DataBasedBanditFromPandas
 from src.ilovebandits.data_bandits.utils import GenrlBanditDataLoader
-
-RANDOM_STATE = 42
+from src.ilovebandits.tests.test_constants import (
+    RANDOM_STATE,
+    TEST_REWARD_DELAY_NONE,
+)
 
 
 @pytest.fixture
@@ -30,7 +32,7 @@ def test_databandit_from_pandas_with_shuttle_data(shuttle_data):
     """
     ds_ban = DataBasedBanditFromPandas(
         df=shuttle_data,
-        reward_delay=0,
+        reward_delay=TEST_REWARD_DELAY_NONE,
         random_state=RANDOM_STATE,
     )
     assert ds_ban.arms == 7

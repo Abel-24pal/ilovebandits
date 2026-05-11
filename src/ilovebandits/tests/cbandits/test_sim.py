@@ -18,18 +18,24 @@ from src.ilovebandits.sim import (
 from src.ilovebandits.mab.agents import GreedyAgent
 from src.ilovebandits.mab.q_estimators import QEstMean
 from src.ilovebandits.utils import is_fitted
-
-RANDOM_SEED = 42
-RANDOM_STATE = 42
+from src.ilovebandits.tests.test_constants import (
+    RANDOM_SEED,
+    RANDOM_STATE,
+    TEST_ITERATIONS_DEFAULT,
+    TEST_MIN_ITES_TO_TRAIN,
+    TEST_UPDATE_FACTOR,
+    TEST_REWARD_DELAY_NONE,
+    TEST_REWARD_DELAY_SMALL,
+)
 
 
 @pytest.fixture(scope="module")
 def pars_simcontban():
     """Main parameters for the simulation of a contextual bandit problem."""
     return {
-        "iterations": 1000,
-        "min_ites_to_train": 30,  # minimum number of iterations to start training the agent
-        "update_factor": 28,  # if 1, it updates the model every iteration, if 2, it updates every two iterations, etc.
+        "iterations": TEST_ITERATIONS_DEFAULT,
+        "min_ites_to_train": TEST_MIN_ITES_TO_TRAIN,  # minimum number of iterations to start training the agent
+        "update_factor": TEST_UPDATE_FACTOR,  # if 1, it updates the model every iteration, if 2, it updates every two iterations, etc.
     }
 
 
@@ -37,7 +43,7 @@ def pars_simcontban():
 def pars_simmab():
     """Main parameters for the simulation of a contextual bandit problem."""
     return {
-        "iterations": 1000,
+        "iterations": TEST_ITERATIONS_DEFAULT,
     }
 
 
@@ -48,7 +54,7 @@ def dataset_for_sims():
 
 
 @pytest.fixture(
-    scope="function", params=[0, 10]
+    scope="function", params=[TEST_REWARD_DELAY_NONE, TEST_REWARD_DELAY_SMALL]
 )  # The fixture is run once per test function because the default scope is 'function'.
 def mab_delay_sim(request, pars_simmab, dataset_for_sims):
     """Do a simulation of a contextual bandit problem with different reward delays."""
@@ -81,7 +87,7 @@ def mab_delay_sim(request, pars_simmab, dataset_for_sims):
 
 
 @pytest.fixture(
-    scope="function", params=[0, 10]
+    scope="function", params=[TEST_REWARD_DELAY_NONE, TEST_REWARD_DELAY_SMALL]
 )  # The fixture is run once per test function because the default scope is 'function'.
 def cbandit_delay_sim(request, pars_simcontban, dataset_for_sims):
     """Do a simulation of a contextual bandit problem with different reward delays."""
@@ -255,7 +261,7 @@ def test_cban_sim(cbandit_delay_sim):
 
 def test_update_bandit_error(dataset_for_sims):
     """Test that the NotAbleToUpdateBanditError is raised when the agent cannot be updated."""
-    iterations = 1000
+    iterations = TEST_ITERATIONS_DEFAULT
     min_ites_to_train = (
         iterations // 10
     )  # minimum number of iterations to start training the agent
@@ -292,7 +298,7 @@ def test_update_bandit_error(dataset_for_sims):
 
 def test_no_rewards_error(dataset_for_sims):
     """Test that the NoRewardsReceivedError is raised when no rewards are received."""
-    iterations = 1000
+    iterations = TEST_ITERATIONS_DEFAULT
     min_ites_to_train = (
         iterations // 10
     )  # minimum number of iterations to start training the agent
