@@ -7,22 +7,27 @@ import numpy as np
 from sklearn.base import clone, is_classifier
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
+from .constants import (
+    DEFAULT_DIVISOR_BOOTSTRAP,
+    DEFAULT_EPSILON,
+    DEFAULT_N_ROUNDS_RANDOM,
+    DEFAULT_ONE_MODEL_PER_ARM,
+    DEFAULT_RF_CRITERION_CLASSIFIER,
+    DEFAULT_RF_MAX_DEPTH,
+    DEFAULT_RF_MIN_SAMPLES_LEAF,
+    DEFAULT_RF_RANDOM_STATE,
+    DEFAULT_SAMPLES_FOR_FREQ_EST,
+    DEFAULT_VPAR,
+    MIN_REWARDS_PER_ARM,
+    MIN_SAMPLES_TO_IGNORE_ARM,
+)
 from .exceptions import (
+    AgentNotFullyUpdatedError,
     MismatchedArmNumberError,
     NotEnoughRewardsPerArmError,
-    AgentNotFullyUpdatedError,
 )
 from .handlers import RandForestHandler
 from .utils import argmax
-
-####### COSNTANTS FOR ERROR NotEnoughRewardsPerArmError ########
-# I force all arms to have at least "MIN_REWARDS_PER_ARM" unique rewards until all arms have "MIN_SAMPLES_TO_IGNORE_ARM" samples. Once we have "MIN_SAMPLES_TO_IGNORE_ARM" samples per arm, the error NotEnoughRewardsPerArmError will not be raised anymore.
-MIN_REWARDS_PER_ARM = (
-    2  # Minimum number of unique rewards per arm to avoid NotEnoughRewardsPerArmError
-)
-MIN_SAMPLES_TO_IGNORE_ARM = (
-    100  # Minimum number of samples per arm to avoid NotEnoughRewardsPerArmError
-)
 
 
 class BaseContextualAgent:
@@ -42,7 +47,7 @@ class BaseContextualAgent:
     def __init__(
         self,
         arms: int,
-        n_rounds_random=200,
+        n_rounds_random: int = DEFAULT_N_ROUNDS_RANDOM,
         rng_seed=None,
     ):
         self.arms = arms
@@ -176,8 +181,8 @@ class GreedyConAgent(BaseContextualAgent):
             RandomForestRegressor, RandomForestClassifier
         ],  # NOT PREPARED FOR CLASSIFICATION YET!
         arms: int,
-        n_rounds_random: int = 200,
-        one_model_per_arm: bool = True,
+        n_rounds_random: int = DEFAULT_N_ROUNDS_RANDOM,
+        one_model_per_arm: bool = DEFAULT_ONE_MODEL_PER_ARM,
         rng_seed=None,
         min_rewards_per_arm: int = MIN_REWARDS_PER_ARM,
         min_samples_to_ignore_arm: int = MIN_SAMPLES_TO_IGNORE_ARM,
@@ -371,9 +376,9 @@ class EpsGreedyConAgent(GreedyConAgent):
             RandomForestRegressor, RandomForestClassifier
         ],  # NOT PREPARED FOR CLASSIFICATION YET!
         arms: int,
-        n_rounds_random: int = 200,
-        epsilon: float = 0.1,
-        one_model_per_arm: bool = True,
+        n_rounds_random: int = DEFAULT_N_ROUNDS_RANDOM,
+        epsilon: float = DEFAULT_EPSILON,
+        one_model_per_arm: bool = DEFAULT_ONE_MODEL_PER_ARM,
         rng_seed=None,
         min_rewards_per_arm: int = MIN_REWARDS_PER_ARM,
         min_samples_to_ignore_arm: int = MIN_SAMPLES_TO_IGNORE_ARM,
@@ -463,9 +468,9 @@ class BootStrapConAgent(BaseContextualAgent):
         self,
         base_estimator: Union[RandomForestRegressor, RandomForestClassifier],
         arms: int,
-        n_rounds_random: int = 200,
+        n_rounds_random: int = DEFAULT_N_ROUNDS_RANDOM,
         rng_seed=None,
-        divisor_bootstrap: int = 1,  # if 1 we always bootstrap when take_agent_action(). If 2, we bootstrap half of the times we use take_agent_action(). If 3, we bootstrap a third of the times we use take_agent_action()
+        divisor_bootstrap: int = DEFAULT_DIVISOR_BOOTSTRAP,  # if 1 we always bootstrap when take_agent_action(). If 2, we bootstrap half of the times we use take_agent_action(). If 3, we bootstrap a third of the times we use take_agent_action()
     ):
         super().__init__(
             arms=arms, n_rounds_random=n_rounds_random, rng_seed=rng_seed
@@ -638,18 +643,18 @@ class BaseTreeEnsembleContextualAgent(GreedyConAgent):
     def __init__(  # noqa: PLR0913
         self,
         arms: int,
-        n_rounds_random: int = 200,
+        n_rounds_random: int = DEFAULT_N_ROUNDS_RANDOM,
         base_model: Union[
             RandomForestClassifier, RandomForestRegressor
         ] = RandomForestClassifier(
-            criterion="log_loss",  # very important to have accurate probabilities
-            min_samples_leaf=20,
+            criterion=DEFAULT_RF_CRITERION_CLASSIFIER,  # very important to have accurate probabilities
+            min_samples_leaf=DEFAULT_RF_MIN_SAMPLES_LEAF,
             max_samples=None,  # very important _set_train_data_per_tree logic is created based on this assumption
-            max_depth=3,
-            random_state=42,
+            max_depth=DEFAULT_RF_MAX_DEPTH,
+            random_state=DEFAULT_RF_RANDOM_STATE,
         ),
-        vpar: float = 1.0,
-        one_model_per_arm: bool = True,
+        vpar: float = DEFAULT_VPAR,
+        one_model_per_arm: bool = DEFAULT_ONE_MODEL_PER_ARM,
         rng_seed=None,
         min_rewards_per_arm: int = MIN_REWARDS_PER_ARM,
         min_samples_to_ignore_arm: int = MIN_SAMPLES_TO_IGNORE_ARM,
@@ -816,7 +821,7 @@ class BaseTreeEnsembleContextualAgent(GreedyConAgent):
 class RandomForestTsAgent(BaseTreeEnsembleContextualAgent):
     def __init__(
         self,
-        samples_for_freq_est: int = 100,  # Only TS agent needs this parameter
+        samples_for_freq_est: int = DEFAULT_SAMPLES_FOR_FREQ_EST,  # Only TS agent needs this parameter
         **kwargs,
     ):
         super().__init__(**kwargs)

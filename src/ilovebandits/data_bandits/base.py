@@ -3,6 +3,8 @@
 import numpy as np
 import pandas as pd
 
+from ..constants import DEFAULT_REWARD_DELAY
+
 
 class DataBasedBanditFromPandas:
     """
@@ -21,7 +23,12 @@ class DataBasedBanditFromPandas:
         This can be useful for simulating environments where the reward is not immediate.
     """
 
-    def __init__(self, df: pd.DataFrame, reward_delay: int = 0, random_state=None):
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        reward_delay: int = DEFAULT_REWARD_DELAY,
+        random_state=None,
+    ):
         self.df = df
         self.arms = len(df.iloc[:, -1].unique())  # n_actions
         self.idx_arms = list(np.sort(df.iloc[:, -1].unique()))
@@ -31,7 +38,9 @@ class DataBasedBanditFromPandas:
         self.random_state = random_state
 
         if not np.issubdtype(df.iloc[:, -1].unique().dtype, np.integer):
-            raise ValueError(f"Expected labels to be of integer type, but found {df.iloc[:, -1].unique().dtype}.")
+            raise ValueError(
+                f"Expected labels to be of integer type, but found {df.iloc[:, -1].unique().dtype}."
+            )
         if self.idx_arms != list(range(self.arms)):
             raise ValueError(
                 f"Expected arms to be encoded in the range [0, {self.arms - 1}], but found arms: {self.idx_arms}."
@@ -58,7 +67,9 @@ class DataBasedBanditFromPandas:
             Tuple[int, int]: Computed reward and associated delay.
         """
         if action not in self.idx_arms:
-            raise ValueError(f"Action {action} is not a valid arm. Valid arms are: {self.idx_arms}.")
+            raise ValueError(
+                f"Action {action} is not a valid arm. Valid arms are: {self.idx_arms}."
+            )
 
         label = self.df.iloc[self.idx, -1]
         r = int(label == action)
@@ -72,4 +83,6 @@ class DataBasedBanditFromPandas:
     def reset_env(self):
         """Reset DataBasedBandit."""
         self.idx = 0
-        self.df = self.df.sample(frac=1, random_state=self.random_state).reset_index(drop=True)  # Shuffle the DataFrame
+        self.df = self.df.sample(frac=1, random_state=self.random_state).reset_index(
+            drop=True
+        )  # Shuffle the DataFrame

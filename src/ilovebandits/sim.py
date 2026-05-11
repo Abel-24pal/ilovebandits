@@ -6,6 +6,7 @@ from copy import deepcopy
 
 import numpy as np
 
+from .constants import DEFAULT_SIMULATION_ITERATIONS
 from .exceptions import (
     MismatchedArmNumberError,
     NoRewardsReceivedError,
@@ -28,7 +29,7 @@ class SimContBandit:
         self.agent.reset_agent()
         self.model_env.reset_env()
 
-    def simulate(self, iterations: int = 1000):
+    def simulate(self, iterations: int = DEFAULT_SIMULATION_ITERATIONS):
         """
         Perform the simulation for the given number of iterations.
 
@@ -131,7 +132,7 @@ class SimMabBandit:
         self.agent.reset_agent()
         self.model_env.reset_env()
 
-    def simulate(self, iterations: int = 1000):
+    def simulate(self, iterations: int = DEFAULT_SIMULATION_ITERATIONS):
         """
         Perform the simulation for the given number of iterations.
 
